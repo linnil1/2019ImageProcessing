@@ -34,7 +34,8 @@ def read64(filename):
 
 def limitImg(func):
     """
-    Limit the image value from 0 to 1
+    Limit the image value from 0 to 1.
+    Use it as a decorator.
     """
     def wrapFunc(*args, **kwargs):
         img = func(*args, **kwargs)

@@ -23,20 +23,26 @@ def read64(filename):
     read_lines = open(filename).readlines()
     real_image = [[map64(ch) for ch in line if map64(ch) is not None] for line in read_lines]
     real_image = list(filter(None, real_image))
-    real_image = np.array(real_image[:-1]) / 31
+    real_image = np.array(real_image) / 31
     return real_image
 
 
 def getHist(img):
+    """
+    Calculate histogram in image
+    """
     arr = np.array([])
     arr.resize(32)
     map32 = np.uint8(img * 31).flatten()
     for i in map32:
         arr[i] += 1
-    return arr
+    return arr / arr.sum()
 
 
 def setParser():
+    """
+    Set argument parser
+    """
     parser = argparse.ArgumentParser(description="HW1")
     parser.add_argument('path',       type=str,            help="The image you want to read") 
     parser.add_argument('--add',      type=float,          help="Add a number to the image")
@@ -47,6 +53,9 @@ def setParser():
 
 
 def plot(img, new_img):
+    """
+    plot the image
+    """
     n = 3 if new_img is not None else 2
     plt.figure()
     

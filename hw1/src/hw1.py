@@ -1,12 +1,11 @@
 """
 Author: linnil1
 Objective: Image Processing HW1
-Description: This program 1)read a spectial format called 64, which represented 
+Description: This program 1)read a spectial format called 64, which represented
 a image, 2)do some operation (multiply, add, avg) on it and 3)draw histogram.
 """
 
 import numpy as np
-import cv2
 import matplotlib.pyplot as plt
 import myimg
 import utils
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     new_img = None
     if args.add is not None:
         new_img = imageAdd(img, args.add)
-    elif args.addimage is not  None:
+    elif args.addimage is not None:
         img2 = utils.read64(args.addimage)
         new_img = imageAvg(img, img2)
     elif args.multiply is not None:

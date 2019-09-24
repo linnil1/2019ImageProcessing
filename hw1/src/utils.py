@@ -44,7 +44,7 @@ def setParser():
     Set argument parser
     """
     parser = argparse.ArgumentParser(description="HW1")
-    parser.add_argument('path',       type=str,            help="The image you want to read") 
+    parser.add_argument('path',       type=str,            help="The image you want to read")
     parser.add_argument('--add',      type=float,          help="Add a number to the image")
     parser.add_argument('--addimage', type=str,            help="Add a image to the image")
     parser.add_argument('--multiply', type=float,          help="Multiply a number to the image")
@@ -58,7 +58,7 @@ def plot(img, new_img):
     """
     n = 3 if new_img is not None else 2
     plt.figure()
-    
+
     # ori image
     plt.subplot(1, n, 1)
     plt.imshow(img, cmap="gray")

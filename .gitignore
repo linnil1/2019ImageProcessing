@@ -2,4 +2,5 @@
 out
 build/
 *.zip
-__pycache__/
+__pycache__
+Homework*

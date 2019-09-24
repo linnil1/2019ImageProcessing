@@ -52,7 +52,7 @@ def image_special_func(img):
     """
     Special operation to this image
     """
-    return img[:, :] - img[:, ::-1] + .5
+    return img[:, :-1] - img[:, 1:]
 
 
 def test():

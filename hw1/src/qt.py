@@ -84,7 +84,7 @@ def showImage(img, widget_img):
     # RGB image
     # qimage = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
     # Gray scale
-    qimage = QImage(np.uint8(img * 255), img.shape[1], img.shape[0], QImage.Format_Grayscale8)
+    qimage = QImage(np.uint8(img * 255), img.shape[1], img.shape[0], img.shape[1], QImage.Format_Grayscale8)
     widget_img.setPixmap(QPixmap(qimage).scaled(*default_size, Qt.KeepAspectRatio))
 
 
@@ -365,7 +365,7 @@ class ImageSpecial(MyFunc):
 
 # test
 # oriimg = utils.read64("../JET.64")
-# ImageAdd.setUp()()
+# ImageSpecial.setUp()()
 
 # setup custom things
 setUpMenu([("imageBasic", ImageBasic),

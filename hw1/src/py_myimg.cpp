@@ -105,10 +105,10 @@ PyObject* imageSpecial(PyObject *self, PyObject *args) {
 
     // main
     MyImg img = parseToMyImg(image_obj),
-          new_img{img.shape(0), img.shape(1)};
+          new_img{img.shape(0), img.shape(1) - 1};
     for (int i=0; i<img.shape(0); ++i)
-        for (int j=0; j<img.shape(1); ++j) {
-            new_img(i, j) = img(i, j) - img(i, img.shape(1) - 1 - j) + .5;
+        for (int j=0; j<img.shape(1) - 1; ++j) {
+            new_img(i, j) = img(i, j + 1) - img(i, j);
         }
     new_img.limit();
     return parseToObj(new_img);

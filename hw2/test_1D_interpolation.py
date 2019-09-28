@@ -13,12 +13,13 @@ x = np.arange(n)
 y = gaussian(x, mu=n//2, sig=n//2)
 y[::2] -= 0.05
 
+
 def nearestNeighbor():
     arr = []
     for i in range(kn):
         now = i * ksize
         now_x = np.int(now)
-        if  (now - now_x) < 0.5:
+        if (now - now_x) < 0.5:
             arr.append(y[now_x])
         else:
             arr.append(y[now_x + 1])

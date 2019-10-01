@@ -1,7 +1,7 @@
 """
 Author: linnil1
 Objective: Image Processing HW2
-Description: 
+Description:
 """
 
 import numpy as np
@@ -82,7 +82,7 @@ def test():
     real_image = utils.readRGB("data/kemono_friends.jpg")
 
     # now_img = setThreshold(toGrayA(real_image), 168)
-    now_img = bilinear(toGrayA(real_image), (100, 100))
+    now_img = bilinear(toGrayA(real_image), (1000, 1000))
     plt.imshow(now_img, cmap="gray")
     # now_img = imageAvg(real_image, real_image1)
 
@@ -135,13 +135,13 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
-    exit()
+    # test()
+    # exit()
 
     parser = utils.setParser()
     args = parser.parse_args()
     print(args)
-    
+
     plt.figure()
     img = utils.readRGB(args.path)
     plt.title("Original Image")

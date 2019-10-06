@@ -6,8 +6,31 @@ Description:
 
 import numpy as np
 import matplotlib.pyplot as plt
-import utils
 import cv2
+import argparse
+import utils
+OrderAction = utils.OrderAction
+
+
+def readRGB(filename):
+    """
+    The only method to read RGB file by cv2
+    """
+    img = cv2.imread(filename)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return np.array(img) / 255
+
+
+def getHist(img):
+    """
+    Calculate histogram in image
+    """
+    gray255_image = np.array(img * 255, dtype=np.int)
+    gray255_image[gray255_image > 255] = 1
+    arr_count = np.zeros(256)
+    bincount = np.bincount(gray255_image.flatten())
+    arr_count[:bincount.size] = bincount
+    return arr_count / arr_count.sum()
 
 
 def limitImg(func):
@@ -42,7 +65,7 @@ def setThreshold(img, threshold):
     Set threshold to binarize image.
     Input image should be gray scale.
     """
-    return img > threshold
+    return img > threshold / 255
 
 
 def linear(q, v1, v2):
@@ -77,102 +100,68 @@ def bilinear(img, new_shape):
     return np.array(arrz)
 
 
+def resizeFromStr(img, res):
+    return bilinear(img, [int(i) for i in res.split('x')])
+
+
+def histogramEqualize(img):
+    """
+    Perform histogram Equalization
+    """
+    gray255_image = np.array(img * 255, dtype=np.int)
+    gray255_image[gray255_image > 255] = 1
+
+    count_old = getHist(img)
+    map_value = np.cumsum(count_old)
+    return map_value[gray255_image]
+
+
+def gammaCorrection(img, num):
+    """
+    Perform gamma correction
+    """
+    return img ** num
+
+
+def showHist(img):
+    return utils.showHist(getHist(img))
+
+
 def test():
     # read
-    real_image = utils.readRGB("data/kemono_friends.jpg")
-
-    # now_img = setThreshold(toGrayA(real_image), 168)
-    now_img = bilinear(toGrayA(real_image), (1000, 1000))
-    plt.imshow(now_img, cmap="gray")
-    # now_img = imageAvg(real_image, real_image1)
-
-    """
-    now_img = bilinear(toGrayA(real_image), (100, 100))
-    plt.subplot(121)
-    plt.title("Original Image")
-    plt.imshow(real_image)
-    plt.subplot(122)
-    plt.title("Resize to 100x100")
-    plt.imshow(now_img, cmap="gray")
-
-    gray_imga = toGrayA(real_image)
-    gray_imgb = toGrayB(real_image)
-    thres_imga = setThreshold(gray_imga, 168)
-    thres_imgb = setThreshold(gray_imgb, 168)
-
-    # plot it
-    plt.figure()
-    plt.subplot(131)
-    plt.title("Original Image")
-    plt.imshow(real_image)
-    plt.subplot(132)
-    plt.title("gray A")
-    plt.imshow(gray_imga, cmap="gray")
-    plt.subplot(133)
-    plt.title("gray B")
-    plt.imshow(gray_imgb, cmap="gray")
-
-    plt.figure()
-    plt.subplot(131)
-    plt.title("Original Image")
-    plt.imshow(real_image)
-    plt.subplot(132)
-    plt.title("A with threshold")
-    plt.imshow(thres_imga, cmap="gray")
-    plt.subplot(133)
-    plt.title("B with threshold")
-    plt.imshow(thres_imgb, cmap="gray")
-
-    plt.figure()
-    plt.subplot(121)
-    plt.title("Original Image")
-    plt.imshow(real_image)
-    plt.subplot(122)
-    plt.title("A - B")
-    plt.imshow(gray_imga - gray_imgb, cmap="gray")
-    """
+    real_image = readRGB("data/kemono_friends.jpg")
+    plt.imshow(gammaCorrection(real_image, 2))
     plt.show()
+
+
+def parserAdd_hw2(parser):
+    parser.add_argument('--read', type=str,        help="The image you want to read",
+                        func=readRGB,   layer=(0, 1),   action=OrderAction)
+    parser.add_argument('--graya', nargs=0,        help="Convert to gray scale by A method",
+                        func=toGrayA,                   action=OrderAction)
+    parser.add_argument('--grayb', nargs=0,        help="Convert to gray scale by B method",
+                        func=toGrayB,                   action=OrderAction)
+    parser.add_argument('--histogram', nargs=0,    help="Display Histogram",
+                        func=showHist, layer=(1, None), action=OrderAction)
+    parser.add_argument('--threshold', type=float, help="Set Threshold to make the grayscale image binary",
+                        func=setThreshold,              action=OrderAction)
+    parser.add_argument('--resize', type=str,      help="Resize the image to XxY. Usage: --resize 1000x1000",
+                        func=resizeFromStr,             action=OrderAction)
+    parser.add_argument('--equalize', nargs=0,     help="Perform histogram equalization",
+                        func=histogramEqualize,         action=OrderAction)
+    parser.add_argument('--gamma', type=float,     help="Perform gamma correction",
+                        func=gammaCorrection,           action=OrderAction)
 
 
 if __name__ == "__main__":
     # test()
     # exit()
 
-    parser = utils.setParser()
+    parser = argparse.ArgumentParser(description="HW2")
+    utils.parserAdd_general(parser)
+    parserAdd_hw2(parser)
     args = parser.parse_args()
     print(args)
 
-    plt.figure()
-    img = utils.readRGB(args.path)
-    plt.title("Original Image")
-    plt.imshow(img)
-
-    gray_img = None
-    if args.graya:
-        gray_img = toGrayA(img)
-    elif args.grayb:
-        gray_img = toGrayB(img)
-
-    if gray_img is not None:
-        plt.figure()
-        plt.title("Grayscale Image")
-        plt.imshow(gray_img, cmap="gray")
-
-        if args.threshold is not None:
-            plt.figure()
-            plt.title("Binarized Image")
-            plt.imshow(setThreshold(gray_img, args.threshold), cmap="gray")
-
-        if args.hist:
-            plt.figure()
-            hist_bin = utils.getHist(gray_img / 255)
-            plt.title("Histogram")
-            plt.bar(np.arange(32), height=hist_bin)
-
-        if args.resize is not None:
-            new_shape = np.array(args.resize.split('x'), dtype=np.int)
-            plt.figure()
-            plt.title("Resized Image")
-            plt.imshow(bilinear(gray_img, new_shape), cmap="gray")
-
+    utils.orderRun(args)
     plt.show()

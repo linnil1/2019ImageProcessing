@@ -41,23 +41,12 @@ def getHist(img):
     return arr_count / arr_count.sum()
 
 
-def limitImg(func):
-    """
-    Limit the image value from 0 to 1.
-    Use it as a decorator.
-    """
-    def wrapFunc(*args, **kwargs):
-        img = func(*args, **kwargs)
-        img[img > 1] = 1
-        img[img < 0] = 0
-        return img
-    return wrapFunc
-
-
 def toGrayA(img):
     """
     Gray Scale: (R + G + B) / 3
     """
+    if len(img.shape) == 2:
+        return img
     return img.mean(2)
 
 
@@ -65,6 +54,8 @@ def toGrayB(img):
     """
     Gray Scale: 0.299R + 0.587G + 0.114B
     """
+    if len(img.shape) == 2:
+        return img
     return img.dot([0.299, 0.587, 0.114])
 
 
@@ -109,8 +100,12 @@ def bilinear(img, new_shape):
 
 
 def resizeFromStr(img, res):
-    return bilinear(img, [int(i) for i in res.split('x')])
-
+    if len(img.shape) == 2:
+        return bilinear(img, [int(i) for i in res.split('x')])
+    else:
+        return np.stack([resizeFromStr(img[:, :, 0], res),
+                         resizeFromStr(img[:, :, 1], res),
+                         resizeFromStr(img[:, :, 2], res)], 2)
 
 def histogramEqualize(img):
     """

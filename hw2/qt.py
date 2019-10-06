@@ -30,43 +30,114 @@ class CommadWidget():
     Command Widget, a basic widget for image and histogram
     """
     def __init__(self, title, func, n_parent=1, child=True):
-        # setup layout: title
         self.title = title
         self.func = func
         self.child = child
         self.n_parent = n_parent
+        self.index = np.inf
+
+        # setup layout and title
         layout = QBoxLayout(QBoxLayout.TopToBottom)
-        text = QLabel(title)
-        text.setAlignment(Qt.AlignHCenter)
-        layout.addWidget(text)
+        # setup title
+        self.title_widget = QLabel(title)
+        self.title_widget.setAlignment(Qt.AlignHCenter)
+        layout.addWidget(self.title_widget)
         self.layout = layout
+
+        # upstream and downstream
         self.parents = []
         self.childrens = []
 
-    def alert(self, text):
-        alert(self.title + ": " + text)
-
-    def setParent(self, parents):
-        if not self.n_parent:
-            self.alert("Cannot not set parent")
-            return
-        self.parents = parents
-
-    def addChildren(self, children):
-        if not self.child:
-            self.alert("Cannot not set children")
-            return
-        self.childrens.append(children)
+    def __repr__(self):
+        return "<{} {}>({}, {})".format(self.index, self.title,
+                                        [p.index for p in self.parents],
+                                        [c.index for c in self.childrens])
 
     def getParentImg(self):
+        """
+        Get image from upstream(parent)
+        """
         return [parent.img for parent in self.parents]
 
     def update(self):
+        """
+        Update the downstream
+        """
         for child in self.childrens:
             child.update()
 
     def remove(self):
+        """
+        Remove this module
+        """
         removeRecursive(self.layout)
+
+    def alert(self, text):
+        alert(self.title + ": " + text)
+
+    # setting upstream and downstream function
+    def setParent(self):
+        # remove old
+        for p in self.parents:
+            p.childrens.remove(self)
+
+        # Update Parents
+        self.parents = []
+        for dropdown in self.dropdowns:
+            self.parents.append(self.modules[int(dropdown.currentText())])
+
+        # Update childrens
+        for p in self.parents:
+            if not p.child:
+                self.alert("Cannot not set children")
+                return
+            p.childrens.append(self)
+        self.update()
+
+    def setupWithAll(self, modules):
+        """
+        Setup the dropdown after your class is finished
+        NOTE: modules is same as now_modules
+        """
+        # set index
+        self.index = len(modules)
+        self.title_widget.setText(f"[{self.index}] {self.title}")
+
+        # check need to set parent
+        if not self.n_parent:
+            return
+
+        # find available parents
+        options = []
+        for m in modules:
+            if m.child and m.index < self.index:
+                options.append(str(m.index))
+
+        # check legal or not
+        if len(options) < self.n_parent:
+            str_err = f"Add images first."\
+                      f"{self.title} needs {self.n_parent} input"
+            raise SyntaxError(str_err)
+
+        # Set text description
+        layout = QBoxLayout(QBoxLayout.LeftToRight)
+        text = QLabel("From: ")
+        layout.addWidget(text)
+
+        # set widget
+        self.dropdowns = []
+        self.modules = modules
+        for i in range(self.n_parent):
+            dropdown = QComboBox()
+            dropdown.addItems(options)
+            dropdown.setCurrentText(options[-self.n_parent + i])
+            dropdown.currentIndexChanged.connect(self.setParent)
+            layout.addWidget(dropdown)
+            self.dropdowns.append(dropdown)
+        self.layout.addLayout(layout)
+
+        # update the image and add to lists
+        self.setParent()
 
 
 class ImageWidget(CommadWidget):
@@ -74,7 +145,7 @@ class ImageWidget(CommadWidget):
     Image Widget, store the whole layout and it's image widget
     """
     def __init__(self, *args, **kwargs):
-        super(ImageWidget, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # setup image widget
         self.widget = QLabel()
         self.layout.addWidget(self.widget)
@@ -93,7 +164,7 @@ class ImageWidget(CommadWidget):
                             img.shape[1], QImage.Format_Grayscale8)
         self.widget.setPixmap(QPixmap(qimage).scaled(
             *default_size, Qt.KeepAspectRatio))
-        super(ImageWidget, self).update()
+        super().update()
         windowTighten()
 
 
@@ -102,7 +173,7 @@ class ImageReading(ImageWidget):
     The layout of readRGB, read64
     """
     def __init__(self, text, func, image_format):
-        super(ImageReading, self).__init__(text, func, n_parent=0)
+        super().__init__(text, func, n_parent=0)
         self.image_format = image_format
 
         # load image button
@@ -139,7 +210,7 @@ class ImageSimple(ImageWidget):
     Image Widget, store the whole layout and it's image widget
     """
     def __init__(self, *args):
-        super(ImageSimple, self).__init__(*args)
+        super().__init__(*args)
 
     def update(self):
         img = self.func(*self.getParentImg())
@@ -152,7 +223,7 @@ class ImageSpinbox(ImageWidget):
     """
     def __init__(self, title, func,
                  input_type, input_range, input_default, n_parent=1):
-        super(ImageSpinbox, self).__init__(title, func, n_parent)
+        super().__init__(title, func, n_parent)
         if input_type is float:
             self.widget_input = QDoubleSpinBox()
         elif input_type is int:
@@ -175,7 +246,7 @@ class ImageText(ImageWidget):
     """
     def __init__(self, title, func,
                  input_default="", input_mask="", n_parent=1):
-        super(ImageText, self).__init__(title, func, n_parent)
+        super().__init__(title, func, n_parent)
         self.widget_input = QLineEdit()
         self.widget_input.setInputMask(input_mask)
         self.widget_input.setText(input_default)
@@ -194,7 +265,7 @@ class ImageHistogram(CommadWidget):
     The layout of histogram
     """
     def __init__(self, title, func):
-        super(ImageHistogram, self).__init__(title, func, child=False)
+        super().__init__(title, func, child=False)
 
         # setup bar chart widget
         self.widget = QChartView()
@@ -256,21 +327,17 @@ def moduleAdd(module_name, args):
     Add new module
     """
     # print(module_name, args)
-    module = module_name(*args)
-    if module.n_parent:
-        parents = [m for m in now_modules if m.child]
-        if len(parents) < module.n_parent:
-            alert(f"Add images first."
-                  f"{module.title} needs {module.n_parent} input")
-            return
+    try:
+        module = module_name(*args)
+        module.setupWithAll(now_modules)
+        now_modules.append(module)
+        layout.addLayout(module.layout)
+    except Exception as e:
+        alert(e)
 
-        # update the image and add to lists
-        module.setParent(parents[-module.n_parent:])
-        for p in module.parents:
-            p.addChildren(module)
-        module.update()
-    now_modules.append(module)
-    layout.addLayout(module.layout)
+
+def modulesGet():
+    return now_modules
 
 
 # Setup
@@ -334,11 +401,45 @@ def alert(error):
     message.exec()
 
 
+def test():
+    filename = "data/kemono_friends.jpg"
+    img = hw2.readRGB(filename)
+    moduleAdd(*modules[1])
+    now_modules[0].showImage(img)
+    filename = "data/stackoverflow.jpg"
+    img = hw2.readRGB(filename)
+    moduleAdd(*modules[1])
+    now_modules[1].showImage(img)
+    moduleAdd(*modules[2])
+    moduleAdd(*modules[-6])
+
+
 # Predefine modules
 modules = [
+    # read image module
+    (ImageReading,   ("Read 64 formatted image",  hw1.read64, "64 formatted image (*.64)")),
+    (ImageReading,   ("Read color image",         hw2.readRGB, "JPG or BMP image (*.jpg *.jpeg *.bmp)")),
+    # histogram module
+    (ImageHistogram, ("Histogram (32bin)",        hw1.getHist)),
+    # hw1 module
+    (ImageSpinbox,   ("Add number to image",      hw1.imageAdd, float, (-255, 255), 0)),
+    (ImageSpinbox,   ("Multiply number to image", hw1.imageMult, float, (0, 255), 1)),
+    (ImageSimple,    ("Difference between image", hw1.imageDiff, 2)),
+    (ImageSimple,    ("Average between image",    hw1.imageAvg, 2)),
+    (ImageSimple,    ("Special function in hw1",  hw1.image_special_func)),
+    # hw2 module
+    (ImageSimple,    ("Gray scale (A)",           hw2.toGrayA)),
+    (ImageSimple,    ("Gray scale (B)",           hw2.toGrayB)),
+    (ImageSpinbox,   ("Set threshold",            hw2.setThreshold, int, (0, 255), 128)),
+    (ImageSimple,    ("Histogram equalization",   hw2.histogramEqualize)),
+    (ImageSpinbox,   ("Gamma Correction",         hw2.gammaCorrection, float, (-100, 100), 1)),
+    (ImageText,      ("Resize (Bilinear)",        hw2.resizeFromStr, "600x400", "")),
+    # util module
+    (ImageSimple,    ("Copy",                     utils.copyImg)),
 ]
 
 # setup and run
 setUpMenu()
 window.show()
+# test()
 app.exec_()

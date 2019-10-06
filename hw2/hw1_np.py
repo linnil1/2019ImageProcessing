@@ -102,6 +102,8 @@ def imageDiff(img1, img2):
     Get the difference of two images
     the equation is img1 - img2 and set 0.5 as equal
     """
+    if img1.shape != img2.shape:
+        raise RuntimeError("Shape is different")
     return (img1 - img2) / 2 + 0.5
 
 
@@ -110,6 +112,8 @@ def imageAvg(img1, img2):
     """
     Make average of two image pixelwisely.
     """
+    if img1.shape != img2.shape:
+        raise RuntimeError("Shape is different")
     return (img1 + img2) / 2
 
 

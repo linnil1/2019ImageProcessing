@@ -164,9 +164,9 @@ def parserAdd_hw2(parser):
 if __name__ == "__main__":
     # test()
     # exit()
-    import hw1_np
+    import hw1_np as hw1
     parser = argparse.ArgumentParser(description="HW2")
     utils.parserAdd_general(parser)
-    hw1_np.parserAdd_hw1(parser)
+    hw1.parserAdd_hw1(parser)
     parserAdd_hw2(parser)
     utils.orderRun(parser)

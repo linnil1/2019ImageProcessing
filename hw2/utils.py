@@ -1,7 +1,7 @@
-import argparse
-import copy
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
+import copy
 
 
 class Command():
@@ -48,14 +48,16 @@ def parserAdd_general(parser):
     """
     Add parser with general command
     """
-    parser.add_argument('--copy',     type=str, nargs=0, help="Copy the previous Image",
-                        func=copyImg,  layer=(1, 1),    action=OrderAction)
-    parser.add_argument('--pop',      type=str, nargs=0, help="Reomve previous Image",
-                        func=pop,      layer=(1, -1),   action=OrderAction)
-    parser.add_argument('--show',     type=str, nargs=0, help="Display the image",
-                        func=show,     layer=(1, None), action=OrderAction)
-    parser.add_argument('--showgray', type=str, nargs=0, help="Display the image in gray scale",
-                        func=showGray, layer=(1, None), action=OrderAction)
+    parser.add_argument('--copy',      type=str, nargs=0, help="Copy the previous Image",
+                        func=copyImg,   layer=(1, 1),    action=OrderAction)
+    parser.add_argument('--pop',       type=str, nargs=0, help="Reomve previous Image",
+                        func=pop,       layer=(1, -1),   action=OrderAction)
+    parser.add_argument('--show',      type=str, nargs=0, help="Display the image",
+                        func=show,      layer=(1, None), action=OrderAction)
+    parser.add_argument('--showcolor', type=str, nargs=0, help="Display the color image",
+                        func=showColor, layer=(1, None), action=OrderAction)
+    parser.add_argument('--showgray',  type=str, nargs=0, help="Display the image in gray scale",
+                        func=showGray,  layer=(1, None), action=OrderAction)
 
 
 def copyImg(img):
@@ -79,7 +81,7 @@ def showHist(bar):
     return None
 
 
-def show(img):
+def showColor(img):
     """
     Show color image
     """
@@ -93,6 +95,16 @@ def showGray(img):
     """
     plt.figure()
     plt.imshow(img, cmap="gray")
+
+
+def show(img):
+    """
+    Auto show image selected by img shape
+    """
+    if len(img.shape) == 3:
+        showColor(img)
+    else:
+        showGray(img)
 
 
 def orderRun(parser):

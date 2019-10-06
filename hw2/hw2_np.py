@@ -1,7 +1,15 @@
 """
 Author: linnil1
 Objective: Image Processing HW2
-Description:
+Description: Some operations are implemented in the file
+* read color image
+* convert to gray scale
+* resize
+* get histogram
+* show histogram
+* histogram equalization
+* gamma correction
+* Binarize by threshold
 """
 
 import numpy as np
@@ -135,33 +143,30 @@ def test():
 
 
 def parserAdd_hw2(parser):
-    parser.add_argument('--read', type=str,        help="The image you want to read",
+    parser.add_argument('--read',      type=str,   help="The image you want to read",
                         func=readRGB,   layer=(0, 1),   action=OrderAction)
-    parser.add_argument('--graya', nargs=0,        help="Convert to gray scale by A method",
+    parser.add_argument('--graya',     nargs=0,        help="Convert to gray scale by A method",
                         func=toGrayA,                   action=OrderAction)
-    parser.add_argument('--grayb', nargs=0,        help="Convert to gray scale by B method",
+    parser.add_argument('--grayb',     nargs=0,    help="Convert to gray scale by B method",
                         func=toGrayB,                   action=OrderAction)
     parser.add_argument('--histogram', nargs=0,    help="Display Histogram",
                         func=showHist, layer=(1, None), action=OrderAction)
     parser.add_argument('--threshold', type=float, help="Set Threshold to make the grayscale image binary",
                         func=setThreshold,              action=OrderAction)
-    parser.add_argument('--resize', type=str,      help="Resize the image to XxY. Usage: --resize 1000x1000",
+    parser.add_argument('--resize',    type=str,   help="Resize the image to XxY. Usage: --resize 1000x1000",
                         func=resizeFromStr,             action=OrderAction)
-    parser.add_argument('--equalize', nargs=0,     help="Perform histogram equalization",
+    parser.add_argument('--equalize',  nargs=0,    help="Perform histogram equalization",
                         func=histogramEqualize,         action=OrderAction)
-    parser.add_argument('--gamma', type=float,     help="Perform gamma correction",
+    parser.add_argument('--gamma',     type=float, help="Perform gamma correction",
                         func=gammaCorrection,           action=OrderAction)
 
 
 if __name__ == "__main__":
     # test()
     # exit()
-
+    import hw1_np
     parser = argparse.ArgumentParser(description="HW2")
     utils.parserAdd_general(parser)
+    hw1_np.parserAdd_hw1(parser)
     parserAdd_hw2(parser)
-    args = parser.parse_args()
-    print(args)
-
-    utils.orderRun(args)
-    plt.show()
+    utils.orderRun(parser)

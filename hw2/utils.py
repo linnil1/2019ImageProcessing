@@ -1,39 +1,138 @@
-import numpy as np
 import argparse
+import copy
+import numpy as np
 import matplotlib.pyplot as plt
-import cv2
 
 
-def readRGB(filename):
+class Command():
     """
-    The only method to read RGB file by cv2
+    Each command is a small units in OrderAction
     """
-    img = cv2.imread(filename)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    return img
+    def __init__(self, func, dest, layer, value=None):
+        self.func = func
+        self.dest = dest
+        self.prev = layer[0]
+        self.output = layer[1]
+        self.value = value
+
+    def __repr__(self):
+        return f"<{self.dest} {self.prev}-{self.output}>{self.value}"
+
+    def run(self, args):
+        return self.func(*args, *self.value)
 
 
-def getHist(img):
+class OrderAction(argparse.Action):
     """
-    Calculate histogram in image
+    OrderAction is to store the order of command.
+    store_true can be set by nargs = 0
     """
-    arr = np.array([])
-    arr.resize(32)
-    map32 = np.uint8(img * 31).flatten()
-    for i in map32:
-        arr[i] += 1
-    return arr / arr.sum()
+    def __init__(self, option_strings, dest, nargs=1,
+                 layer=(1, 0), func=None, **kwargs):
+        self.nargs = nargs
+        self.command = Command(func, dest, layer)
+        super(OrderAction, self).__init__(option_strings, dest,
+                                          nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if 'order_command' not in namespace:
+            setattr(namespace, 'order_command', [])
+        order_command = namespace.order_command
+        c = copy.deepcopy(self.command)
+        c.value = values
+        order_command.append(c)
+        setattr(namespace, 'order_command', order_command)
 
 
-def setParser():
+def parserAdd_general(parser):
     """
-    Set argument parser
+    Add parser with general command
     """
-    parser = argparse.ArgumentParser(description="HW1")
-    parser.add_argument('path',        type=str,            help="The image you want to read")
-    parser.add_argument('--graya',     action="store_true", help="Convert to gray scale by A method")
-    parser.add_argument('--grayb',     action="store_true", help="Convert to gray scale by B method")
-    parser.add_argument('--hist',      action="store_true", help="Display Histogram")
-    parser.add_argument('--threshold', type=float,          help="Set Threshold to make the grayscale image binary")
-    parser.add_argument('--resize',    type=str,            help="Resize the image to XxY. Usage: --resize 1000x1000")
-    return parser
+    parser.add_argument('--copy',     type=str, nargs=0, help="Copy the previous Image",
+                        func=copyImg,  layer=(1, 1),    action=OrderAction)
+    parser.add_argument('--pop',      type=str, nargs=0, help="Reomve previous Image",
+                        func=pop,      layer=(1, -1),   action=OrderAction)
+    parser.add_argument('--show',     type=str, nargs=0, help="Display the image",
+                        func=show,     layer=(1, None), action=OrderAction)
+    parser.add_argument('--showgray', type=str, nargs=0, help="Display the image in gray scale",
+                        func=showGray, layer=(1, None), action=OrderAction)
+
+
+def copyImg(img):
+    """
+    Copy the image
+    """
+    return img.copy()
+
+
+def pop(img):
+    return None
+
+
+def showHist(bar):
+    """
+    Show histogram
+    """
+    plt.figure()
+    plt.title("Histogram")
+    plt.bar(np.arange(bar.size), height=bar)
+    return None
+
+
+def show(img):
+    """
+    Show color image
+    """
+    plt.figure()
+    plt.imshow(img)
+
+
+def showGray(img):
+    """
+    Show image in gray scale
+    """
+    plt.figure()
+    plt.imshow(img, cmap="gray")
+
+
+def orderRun(parser):
+    """
+    Run the command with specific order
+    """
+    # read parameter
+    args = parser.parse_args()
+    if "order_command" not in args:
+        parser.print_help()
+        return
+    print(args.order_command)
+
+    # start postfix
+    stack = []
+    for command in args.order_command:
+        # postfix
+        if command.prev > len(stack):
+            raise argparse.ArgumentTypeError(
+                    f"Add more image before {command.dest} operation")
+        if command.prev:
+            imgs = stack[-command.prev:]
+        else:
+            imgs = []
+        now_img = command.run(imgs)
+
+        # remove previous and create new one
+        if command.output == 0:
+            stack = stack[:-command.prev]
+            stack.append(now_img)
+        # create new one
+        elif command.output == 1:
+            stack.append(now_img)
+        # pop
+        elif command.output == -1:
+            stack = stack[:-command.prev]
+        # no effect
+        elif command.output is None:
+            pass
+        else:  # TODO
+            pass
+
+    plt.show()

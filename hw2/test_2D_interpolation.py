@@ -10,8 +10,8 @@ def gaussian(x, mu=0, sig=1):
 
 nx = 20
 ny = 20
-knx = 10
-kny = 10
+knx = 80
+kny = 80
 ksizex = (nx - 1) / (knx - 1)
 ksizey = (ny - 1) / (kny - 1)
 x = np.arange(nx)
@@ -44,7 +44,7 @@ def nearestNeighbor():
 
 
 def linear(q, v1, v2):
-    return v1 + (q - np.int(q)) * (v2 - v1)
+    return v1 + q * (v2 - v1)
 
 
 def bilinear():
@@ -58,11 +58,13 @@ def bilinear():
             now_y = j * ksizey
             int_y = np.int(now_y)
             arr.append(linear(
-                now_x,
-                linear(now_y, pad_z[int_x,     int_y],
-                              pad_z[int_x,     int_y + 1]),
-                linear(now_y, pad_z[int_x + 1, int_y],
-                              pad_z[int_x + 1, int_y + 1])))
+                now_x - int_x,
+                linear(now_y - int_y,
+                       pad_z[int_x,     int_y],
+                       pad_z[int_x,     int_y + 1]),
+                linear(now_y - int_y,
+                       pad_z[int_x + 1, int_y],
+                       pad_z[int_x + 1, int_y + 1])))
         arrz.append(arr)
     return np.array(arrz)
 
@@ -88,10 +90,29 @@ def bicubic():
     return np.array(arrz)
 
 
+def transform():
+    data = np.pad(z, ((0, 1), (0, 1)), 'constant')
+    y, x = np.meshgrid(np.arange(knx) * ksizey,
+                       np.arange(kny) * ksizex)
+    int_x = np.array(x, dtype=np.int32)
+    int_y = np.array(y, dtype=np.int32)
+
+    # bilinear
+    return linear(x - int_x,
+                  linear(y - int_y,
+                         data[int_x,     int_y],
+                         data[int_x,     int_y + 1]),
+                  linear(y - int_y,
+                         data[int_x + 1, int_y],
+                         data[int_x + 1, int_y + 1]))
+
+
 def testTime():
     t = timeit.timeit(bicubic, number=10)
     print(f"Bicubic: {t}s")
     t = timeit.timeit(bilinear, number=10)
+    print(f"Bilinear: {t}s")
+    t = timeit.timeit(transform, number=10)
     print(f"Bilinear: {t}s")
 
 
@@ -100,6 +121,7 @@ ax = fig.add_subplot(111, projection='3d')
 ax.scatter(mx, my, z, color="red")
 # new_z = nearestNeighbor()
 # new_z = bilinear()
-new_z = bicubic()
+# new_z = bicubic()
+new_z = transform()
 ax.plot_surface(*np.meshgrid(np.arange(knx) * ksizex, np.arange(kny) * ksizey), new_z, alpha=1)
 plt.show()

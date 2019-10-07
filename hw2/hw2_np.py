@@ -68,44 +68,44 @@ def setThreshold(img, threshold):
 
 
 def linear(q, v1, v2):
-    return v1 + (q - np.int(q)) * (v2 - v1)
+    if q.shape == v1.shape:
+        return v1 + q[:, :] * (v2 - v1)
+    else:
+        return v1 + q[:, :, None] * (v2 - v1)
 
 
 def bilinear(img, new_shape):
     """
     Change the shape of the image by bilinear interpoltion.
-    Input image should be gray scale.
     """
+    # prepare data
     print(f"{img.shape} -> {new_shape}")
-    arrz = []
-    ksizex, ksizey = (np.array(img.shape) - 1) \
-                   / (np.array(new_shape) - 1)
-    pad_z = np.pad(img, ((0, 1), (0, 1)), 'edge')
-    for i in range(new_shape[0]):
-        arr = []
-        now_x = i * ksizex
-        int_x = np.int(now_x)
-        for j in range(new_shape[1]):
-            now_y = j * ksizey
-            int_y = np.int(now_y)
-            # for each pixel interpolate neighbor's value
-            arr.append(linear(
-                now_x,
-                linear(now_y, pad_z[int_x,     int_y],
-                              pad_z[int_x,     int_y + 1]),
-                linear(now_y, pad_z[int_x + 1, int_y],
-                              pad_z[int_x + 1, int_y + 1])))
-        arrz.append(arr)
-    return np.array(arrz)
+    if len(img.shape) == 2:
+        data = np.pad(img, ((0, 1), (0, 1)), 'constant')
+    else:
+        data = np.pad(img, ((0, 1), (0, 1), (0, 0)), 'constant')
+
+    # prepare x,y
+    ksizex = img.shape[0] / new_shape[0]
+    ksizey = img.shape[1] / new_shape[1]
+    y, x = np.meshgrid(np.arange(new_shape[1]) * ksizey,
+                       np.arange(new_shape[0]) * ksizex)
+    int_x = np.array(x, dtype=np.int32)
+    int_y = np.array(y, dtype=np.int32)
+
+    # bilinear
+    return linear(x - int_x,
+                  linear(y - int_y,
+                         data[int_x,     int_y],
+                         data[int_x,     int_y + 1]),
+                  linear(y - int_y,
+                         data[int_x + 1, int_y],
+                         data[int_x + 1, int_y + 1]))
 
 
 def resizeFromStr(img, res):
-    if len(img.shape) == 2:
-        return bilinear(img, [int(i) for i in res.split('x')])
-    else:
-        return np.stack([resizeFromStr(img[:, :, 0], res),
-                         resizeFromStr(img[:, :, 1], res),
-                         resizeFromStr(img[:, :, 2], res)], 2)
+    return bilinear(img, [int(i) for i in res.split('x')])
+
 
 def histogramEqualize(img):
     """

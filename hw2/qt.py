@@ -7,7 +7,6 @@ import numpy as np
 import hw1_np as hw1
 import hw2_np as hw2
 import utils
-import time
 
 
 # Window instance
@@ -75,8 +74,10 @@ class CommadWidget():
     def alert(self, text):
         alert(self.title + ": " + text)
 
-    # setting upstream and downstream function
     def setParent(self):
+        """
+        Update parents (also it's childrens) when something changed
+        """
         # remove old
         for p in self.parents:
             p.childrens.remove(self)
@@ -84,7 +85,8 @@ class CommadWidget():
         # Update Parents
         self.parents = []
         for dropdown in self.dropdowns:
-            self.parents.append(self.modules[int(dropdown.currentText())])
+            module = dropdown.itemData(dropdown.currentIndex())
+            self.parents.append(module)
 
         # Update childrens
         for p in self.parents:
@@ -108,10 +110,7 @@ class CommadWidget():
             return
 
         # find available parents
-        options = []
-        for m in modules:
-            if m.child and m.index < self.index:
-                options.append(str(m.index))
+        options = [m for m in modules if m.child]
 
         # check legal or not
         if len(options) < self.n_parent:
@@ -126,11 +125,11 @@ class CommadWidget():
 
         # set widget
         self.dropdowns = []
-        self.modules = modules
         for i in range(self.n_parent):
             dropdown = QComboBox()
-            dropdown.addItems(options)
-            dropdown.setCurrentText(options[-self.n_parent + i])
+            for opt in options:
+                dropdown.addItem(str(opt.index), opt)
+            dropdown.setCurrentText(str(options[-self.n_parent + i].index))
             dropdown.currentIndexChanged.connect(self.setParent)
             layout.addWidget(dropdown)
             self.dropdowns.append(dropdown)
@@ -250,7 +249,7 @@ class ImageText(ImageWidget):
         self.widget_input = QLineEdit()
         self.widget_input.setInputMask(input_mask)
         self.widget_input.setText(input_default)
-        self.widget_input.editingFinished.connect(self.update)
+        self.widget_input.returnPressed.connect(self.update)
         self.layout.addWidget(self.widget_input)
 
     def update(self, arg=None):
@@ -336,10 +335,6 @@ def moduleAdd(module_name, args):
         alert(e)
 
 
-def modulesGet():
-    return now_modules
-
-
 # Setup
 def setUpMenu():
     """
@@ -383,6 +378,7 @@ def windowTighten():
 def removeRecursive(layout):
     """
     Remove all things in specific layout
+    Does it have memory leak?
     """
     layout.setParent(None)
     for i in reversed(range(layout.count())):
@@ -411,7 +407,7 @@ def test():
     moduleAdd(*modules[1])
     now_modules[1].showImage(img)
     moduleAdd(*modules[2])
-    moduleAdd(*modules[-6])
+    moduleAdd(*modules[-2])
 
 
 # Predefine modules

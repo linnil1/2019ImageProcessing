@@ -451,5 +451,5 @@ modules = [
 # setup and run
 setUpMenu()
 window.show()
-test()
+# test()
 app.exec_()

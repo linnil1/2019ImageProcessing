@@ -1,6 +1,7 @@
 import os
 import argparse
 import shutil
+import subprocess
 
 # read arg
 parser = argparse.ArgumentParser(description="Wrap homework to what Teacher want")
@@ -20,9 +21,13 @@ src  = f"{base}/{name} Program folder"
 shutil.rmtree(base, ignore_errors=True)
 shutil.copytree(f"hw{args.hw}", src, ignore=tree_ign)
 
-# change name
+# change name for shell script and pdf
 shutil.move(f"{src}/hw{args.hw}.pdf", f"{base}/{name}.pdf")
 shutil.copy2(f"{src}/run.sh", f"{src}/HW{args.hw}.sh")
+
+# build exe for windows
+subprocess.Popen(["pyinstaller", "-F", "qt.py"], cwd=f"hw{args.hw}/").wait()
+shutil.move(f"hw{args.hw}/dist/qt.exe", f"{src}/HW{args.hw}.exe")
 
 print("Finish: ")
 print(os.system(f"tree {base}"))

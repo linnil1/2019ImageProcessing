@@ -94,7 +94,7 @@ def imageAdd(img, num):
     Add the image by a constant.
     Make sure the value in my image is from 0 to 1.
     """
-    return img + num / 256
+    return img + num / 255
 
 
 def imageDiff(img1, img2):

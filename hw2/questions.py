@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 
 
 def q2_12():
@@ -100,4 +101,20 @@ def q2_18():
     plt.show()
 
 
-q2_12()
+def q3_12():
+    matplotlib.rcParams['text.usetex']=True
+
+    x = np.linspace(0, 1, 1000)
+    pr = 2 - 2 * x
+    plt.plot(x, pr, label="$P_r$")
+
+    r = 2 * x - x ** 2
+    z = np.sqrt(r)
+    dx = x - [0, *x[:-1]]
+    dz = z - [0, *z[:-1]]
+    plt.plot(z, pr * dx / dz, label="$P_z$ by ($z=\sqrt{2r - r^2}$)")
+    plt.legend()
+    plt.show()
+
+
+q3_12()

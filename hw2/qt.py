@@ -60,10 +60,24 @@ class CommadWidget():
 
     def update(self):
         """
-        Update the downstream
+        Update the objcet and downstream
         """
+        # update this object with error handling
+        try:
+            self.updateThis()
+        except Exception as e:
+            self.alert(e)
+            self.setBlank()
+
+        # update downstream
         for child in self.childrens:
             child.update()
+
+    def updateThis(self):
+        """
+        The function used for updating the instance
+        """
+        pass
 
     def remove(self):
         """
@@ -72,7 +86,7 @@ class CommadWidget():
         removeRecursive(self.layout)
 
     def alert(self, text):
-        alert(self.title + ": " + text)
+        alert(self.title + ": " + str(text))
 
     def setParent(self):
         """
@@ -107,6 +121,7 @@ class CommadWidget():
 
         # check need to set parent
         if not self.n_parent:
+            self.update()
             return
 
         # find available parents
@@ -150,11 +165,11 @@ class ImageWidget(CommadWidget):
         self.layout.addWidget(self.widget)
         self.layout.setAlignment(Qt.AlignTop)
 
-    def showImage(self, img):
+    def showImage(self):
         """
         This method will find out the display method by your input
         """
-        self.img = img
+        img = self.img
         if len(img.shape) == 3:
             qimage = QImage(np.uint8(img * 255), img.shape[1], img.shape[0],
                             img.shape[1] * img.shape[2], QImage.Format_RGB888)
@@ -163,8 +178,14 @@ class ImageWidget(CommadWidget):
                             img.shape[1], QImage.Format_Grayscale8)
         self.widget.setPixmap(QPixmap(qimage).scaled(
             *default_size, Qt.KeepAspectRatio))
+
+    def update(self, *arg, **kwargs):
         super().update()
+        self.showImage()
         windowTighten()
+
+    def setBlank(self):
+        self.img = np.zeros(default_size)
 
 
 class ImageReading(ImageWidget):
@@ -181,7 +202,7 @@ class ImageReading(ImageWidget):
         self.layout.addWidget(button)
 
         # show blank image
-        self.showImage(np.zeros([100, 100]))
+        self.setBlank()
 
     def load(self):
         """
@@ -190,8 +211,8 @@ class ImageReading(ImageWidget):
         filename = self.getFile()
         if not filename:
             return
-        img = self.func(filename)
-        self.showImage(img)
+        self.img = self.func(filename)
+        self.update()
 
     def getFile(self):
         """
@@ -211,9 +232,8 @@ class ImageSimple(ImageWidget):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def update(self):
-        img = self.func(*self.getParentImg())
-        self.showImage(img)
+    def updateThis(self):
+        self.img = self.func(*self.getParentImg())
 
 
 class ImageSpinbox(ImageWidget):
@@ -232,11 +252,9 @@ class ImageSpinbox(ImageWidget):
         self.widget_input.valueChanged.connect(self.update)
         self.layout.addWidget(self.widget_input)
 
-    def update(self, arg=None):
-        if arg is None:
-            arg = self.widget_input.value()
-        img = self.func(*self.getParentImg(), arg)
-        self.showImage(img)
+    def updateThis(self):
+        arg = self.widget_input.value()
+        self.img = self.func(*self.getParentImg(), arg)
 
 
 class ImageText(ImageWidget):
@@ -252,11 +270,9 @@ class ImageText(ImageWidget):
         self.widget_input.returnPressed.connect(self.update)
         self.layout.addWidget(self.widget_input)
 
-    def update(self, arg=None):
-        if arg is None:
-            arg = self.widget_input.displayText()
-        img = self.func(*self.getParentImg(), arg)
-        self.showImage(img)
+    def updateThis(self):
+        arg = self.widget_input.displayText()
+        self.img = self.func(*self.getParentImg(), arg)
 
 
 class ImageHistogram(CommadWidget):
@@ -270,7 +286,7 @@ class ImageHistogram(CommadWidget):
         self.widget = QChartView()
         self.layout.addWidget(self.widget)
 
-    def update(self):
+    def updateThis(self):
         """
         Get bin from image
         Note: It's is not recommand to use too many bins
@@ -399,14 +415,12 @@ def alert(error):
 
 def test():
     filename = "data/kemono_friends.jpg"
+    # filename = "data/stackoverflow.jpg"
     img = hw2.readRGB(filename)
     moduleAdd(*modules[1])
-    now_modules[0].showImage(img)
-    filename = "data/stackoverflow.jpg"
-    img = hw2.readRGB(filename)
-    moduleAdd(*modules[1])
-    now_modules[1].showImage(img)
-    moduleAdd(*modules[2])
+    now_modules[0].img = img
+    now_modules[0].update()
+    moduleAdd(*modules[-3])
     moduleAdd(*modules[-2])
 
 
@@ -437,5 +451,5 @@ modules = [
 # setup and run
 setUpMenu()
 window.show()
-# test()
+test()
 app.exec_()

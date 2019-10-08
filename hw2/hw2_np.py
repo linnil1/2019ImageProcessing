@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import cv2
 import argparse
 import utils
+import re
 OrderAction = utils.OrderAction
 
 
@@ -34,7 +35,7 @@ def getHist(img):
     Calculate histogram in image
     """
     gray255_image = np.array(img * 255, dtype=np.int)
-    gray255_image[gray255_image > 255] = 1
+    gray255_image[gray255_image > 255] = 255
     arr_count = np.zeros(256)
     bincount = np.bincount(gray255_image.flatten())
     arr_count[:bincount.size] = bincount
@@ -104,6 +105,8 @@ def bilinear(img, new_shape):
 
 
 def resizeFromStr(img, res):
+    if not re.match(r"^\s*\d+\s*x\s*\d+\s*$", res):
+        raise ValueError("The value is not like this format 123x123")
     return bilinear(img, [int(i) for i in res.split('x')])
 
 

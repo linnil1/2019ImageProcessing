@@ -4,6 +4,14 @@
  */
 #include "MyImg.h"
 #include <functional>
+#include <complex>
+#include <vector>
+#include <iostream>
+#include <cmath>
+
+#define cmp std::complex<double>
+#define vcmp std::vector<cmp>
+using namespace std::complex_literals;
 
 
 // get median from histogram
@@ -99,20 +107,105 @@ MyImg<float> maxFilter(MyImg<float> &oridata, int nx, int ny, int sizex, int siz
     return orderFilter(oridata, nx, ny, sizex, sizey, histMax);
 }
 
+
+// fft for 1D (Not connect to python)
+// Should be 2power size
+void fft(vcmp &data, vcmp &new_data, int start, int step) {
+    if (start + step >= data.size()) {
+        new_data[start] = data[start];
+        return;
+    }
+    fft(data, new_data, start       , step * 2);
+    fft(data, new_data, start + step, step * 2);
+
+    int n = data.size(),
+        htime = ((n - start - 1) / step + 1) / 2;
+    cmp tmp[htime];
+    for (int i=start, r=0; i<n; i+=step*2, ++r) {
+        cmp e = exp(-M_PI * 2i * cmp(r) / cmp(n)),
+            even = new_data[i],
+            odd  = new_data[i + step]; 
+        new_data[start + step * r] = even + odd * e;
+        tmp[r] = even - odd * e;
+    }
+    for (int i=start + step * htime, r=0; i<n; i+=step, ++r)
+        new_data[i] = tmp[r];
+}
+
+
+// fft for 2D (Not connect to python)
+// Should be 2power size
+void fft2d(MyImg<float> &v1, MyImg<float> &v2) {
+    int h = v1.shape(0),
+        w = v1.shape(1);
+    std::vector<vcmp> new_data;
+    for (int i=0; i<h; ++i) {
+        vcmp tmp(w);
+        for (int j=0; j<w; ++j)
+            tmp[j] = cmp(v1(i, j)) + cmp(v2(i, j)) * 1i;
+        fft(tmp, tmp, 0, 1);
+        new_data.push_back(tmp);
+    }
+
+    for (int j=0; j<w; ++j) {
+        vcmp tmp(h);
+        for (int i=0; i<h; ++i)
+            tmp[i] = new_data[i][j];
+        fft(tmp, tmp, 0, 1);
+        for (int i=0; i<h; ++i) {
+            // new_data[i][j] = tmp[i];
+            v1(i, j) = real(tmp[i]);
+            v2(i, j) = imag(tmp[i]);
+        }
+    }
+}
+
 // test
 int main() {
-    int nx=10, ny=20,
-        padnx=14, padny=24,
-        sizex=5, sizey=5;
+    MyImg<float> v1(4, 4);
+    MyImg<float> v2(4, 4);
+    v1(0,0)=1; v1(0,1)=2; v1(0,2)=42; v1(0,3)=3;
+    v1(1,0)=1; v1(1,1)=12; v1(1,2)=4; v1(1,3)=3;
+    v1(2,0)=51; v1(2,1)=2; v1(2,2)=44; v1(2,3)=3;
+    v1(3,0)=1; v1(3,1)=2; v1(3,2)=4; v1(3,3)=34;
+    fft2d(v1, v2);
+    v1.print();
+    v2.print();
+    /*
+    MyImg<float> v1(128, 128);
+    MyImg<float> v2(128, 128);
+    for(int i=0; i<128; ++i)
+        for(int j=0; j<128; ++j)
+            v1(i, j) = i + j;
+    for(int i=0; i<100; ++i)
+        fft2d(v1, v2);
+    */
+
+    /*
+    vcmp data{1, 2, 4, 4};
+    vcmp new_data(4);
+    fft(data, new_data, 0, 1);
+    for(auto i:new_data)
+        std::cout << i << " ";
+    std::cout << std::endl;
+    */
+    /*
+    int nx=500, ny=500,
+        padnx=550, padny=550,
+        sizex=11, sizey=11;
     MyImg<float> data(padnx, padny);
     for(int i=0; i<padnx; ++i)
         for(auto j=0; j<padny; ++j)
             data(i, j) = (i * padny + j) % 256;
     data.toFloat();
 
-    printf("12345\n");
-    auto new_img = medianFilter(data, nx, ny, sizex, sizey);
-    printf("12345\n");
+    MyImg<float> kernal(10, 10);
+    kernal(1, 0) = kernal(0, 1) = kernal(1, 2) = kernal(2, 1) = -1;
+    kernal(1, 1) = 5;
+
+    auto new_img = conv(data, nx, ny, kernal);
+    for(int i=0; i<9; ++i)
+        new_img = conv(data, nx, ny, kernal);
     new_img.print();
-    printf("12345\n");
+    */
 }

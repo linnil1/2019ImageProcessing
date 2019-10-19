@@ -19,6 +19,7 @@ class Command():
         return f"<{self.dest} {self.prev}-{self.output}>{self.value}"
 
     def run(self, args):
+        print(self.value)
         return self.func(*args, *self.value)
 
 
@@ -35,29 +36,34 @@ class OrderAction(argparse.Action):
                                           nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        if 'order_command' not in namespace:
-            setattr(namespace, 'order_command', [])
+        if "order_command" not in namespace:
+            setattr(namespace, "order_command", [])
         order_command = namespace.order_command
         c = copy.deepcopy(self.command)
         c.value = values
         order_command.append(c)
-        setattr(namespace, 'order_command', order_command)
+        setattr(namespace, "order_command", order_command)
 
 
 def parserAdd_general(parser):
     """
     Add parser with general command
     """
-    parser.add_argument('--copy',      type=str, nargs=0, help="Copy the previous Image",
-                        func=copyImg,   layer=(1, 1),    action=OrderAction)
-    parser.add_argument('--pop',       type=str, nargs=0, help="Reomve previous Image",
-                        func=pop,       layer=(1, -1),   action=OrderAction)
-    parser.add_argument('--show',      type=str, nargs=0, help="Display the image",
-                        func=show,      layer=(1, None), action=OrderAction)
-    parser.add_argument('--showcolor', type=str, nargs=0, help="Display the color image",
-                        func=showColor, layer=(1, None), action=OrderAction)
-    parser.add_argument('--showgray',  type=str, nargs=0, help="Display the image in gray scale",
-                        func=showGray,  layer=(1, None), action=OrderAction)
+    parser.add_argument("--copy",       type=str, nargs=0,
+                        func=copyImg,   layer=(1, 1),    action=OrderAction,
+                        help="Copy the previous Image")
+    parser.add_argument("--pop",        type=str, nargs=0,
+                        func=pop,       layer=(1, -1),   action=OrderAction,
+                        help="Reomve previous Image")
+    parser.add_argument("--show",       type=str, nargs=0,
+                        func=show,      layer=(1, None), action=OrderAction,
+                        help="Display the image")
+    parser.add_argument("--showcolor",  type=str, nargs=0,
+                        func=showColor, layer=(1, None), action=OrderAction,
+                        help="Display the color image")
+    parser.add_argument("--showgray",   type=str, nargs=0,
+                        func=showGray,  layer=(1, None), action=OrderAction,
+                        help="Display the image in gray scale")
 
 
 def copyImg(img):
@@ -105,6 +111,16 @@ def show(img):
         showColor(img)
     else:
         showGray(img)
+
+
+def parseSize(res):
+    """
+    Parse size from string.
+    The string should be like 123x123
+    """
+    if not re.match(r"^\s*\d+\s*x\s*\d+\s*$", res):
+        raise ValueError("The value is not like this format 123x123")
+    return np.array(res.split('x'), dtype=np.int)
 
 
 def orderRun(parser):

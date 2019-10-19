@@ -15,16 +15,6 @@ import utils
 from utils import OrderAction
 
 
-def parseSize(res):
-    """
-    Parse size from string.
-    The string should be like 123x123
-    """
-    if not re.match(r"^\s*\d+\s*x\s*\d+\s*$", res):
-        raise ValueError("The value is not like this format 123x123")
-    return np.array(res.split('x'), dtype=np.int)
-
-
 def wrapImgWithPad(func):
     """
     Wrap my own function as a decorator.
@@ -32,10 +22,10 @@ def wrapImgWithPad(func):
     """
     def wrapFunc(img, size):
         if type(size) is str:
-            size = parseSize(size)
+            size = utils.parseSize(size)
         t, l = size // 2
         b, r = size - (t, l) - 1
-        data = np.pad(img, ((t, b), (l, r)), 'edge')
+        data = np.pad(img, ((t, b), (l, r)), "edge")
         return np.array(func(data.tolist(), *img.shape, *size))
     return wrapFunc
 
@@ -61,9 +51,9 @@ def spatialConv(img, krn):
     size_krn = np.array(krn.shape)
     size = np.max(np.stack([size_img, size_krn]), axis=0)
     pad_img = np.pad(img, [(0, size[0] - size_img[0]),
-                           (0, size[1] - size_img[1])], 'constant')
+                           (0, size[1] - size_img[1])], "constant")
     pad_krn = np.pad(krn, [(0, size[0] - size_krn[0]),
-                           (0, size[1] - size_krn[1])], 'constant')
+                           (0, size[1] - size_krn[1])], "constant")
 
     # convolute and inverse
     result_feq = np.fft.fft2(pad_img) * np.fft.fft2(pad_krn)
@@ -73,12 +63,11 @@ def spatialConv(img, krn):
 
 def wrapSharpenFilter(func):
     """
-    Wrap the unsharpen coefficient to all high pass filter
-    The custom function will return the convolution of img and it's kernal
+    Wrap the unsharp coefficient to all high pass filter
+    The custom function will return the convolution of img and it's kernel
     """
     @hw1.limitImg
-    def wrapFunc(img, k=0, needabs=True, *args, **kwagrs):
-        global tmp1
+    def wrapFunc(img, k=0, *args, needabs=False, **kwagrs):
         res = func(img, *args, **kwagrs)
         if needabs:
             res = np.abs(res)
@@ -88,46 +77,56 @@ def wrapSharpenFilter(func):
 
 @wrapSharpenFilter
 def sobelH(img):
-    kernal = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
-    return spatialConv(img, kernal)
+    kernel = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+    return spatialConv(img, kernel)
 
 
 @wrapSharpenFilter
 def sobelV(img):
-    kernal = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
-    return spatialConv(img, kernal)
+    kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+    return spatialConv(img, kernel)
 
 
 @wrapSharpenFilter
 def laplacian4(img):
-    kernal = -np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
-    return spatialConv(img, kernal)
+    kernel = -np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
+    return spatialConv(img, kernel)
 
 
 @wrapSharpenFilter
 def laplacian8(img):
-    kernal = -np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]])
-    return spatialConv(img, kernal)
+    kernel = -np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]])
+    return spatialConv(img, kernel)
 
 
 @wrapSharpenFilter
-def unsharpen(img, sig):
+def unsharp(img, sig):
     """
-    Unsharpen method: high pass = ori - lowpass
+    Unsharp method: high pass = ori - lowpass
     """
     return img - gaussian(img, sig)
 
 
 @wrapSharpenFilter
 def roberA(img):
-    kernal = np.array([[-1, 0], [0, 1]])
-    return spatialConv(img, kernal)
+    kernel = np.array([[-1, 0], [0, 1]])
+    return spatialConv(img, kernel)
 
 
 @wrapSharpenFilter
 def roberB(img):
-    kernal = np.array([[0, -1], [1, 0]])
-    return spatialConv(img, kernal)
+    kernel = np.array([[0, -1], [1, 0]])
+    return spatialConv(img, kernel)
+
+
+def customKernal(img, txt):
+    """
+    Transfer a text to kernel array
+    """
+    arr = [[i for i in re.split(" |,", t) if i] for t in re.split("\n|;", txt)]
+    print(arr)
+    krn = np.array(arr, dtype=np.float)
+    return spatialConv(img, krn)
 
 
 def feqOperation(img, func):
@@ -164,7 +163,7 @@ def gaussian(img, sig):
     return feqOperation(img, gaussianFilter)
 
 
-def idealLow(img, cutoff):
+def idealLowpass(img, cutoff):
     """
     Low pass filetr by ideal cutoff
     """
@@ -186,6 +185,8 @@ def test():
     # read
     real_image = hw2.readRGB("data/Image 3-2.JPG")
     gray_image = hw2.toGrayA(real_image)
+    customKernal(gray_image, "123 12;123 123")
+    exit()
     plt.figure(figsize=(10, 8))
     plt.subplot(2, 2, 1)
     plt.title("Original")
@@ -202,22 +203,58 @@ def test():
     plt.imshow(a, cmap="gray")
     plt.show()
     # import timeit
-    # print(timeit.timeit(lambda: spatialConv(gray_image, kernal), number=10))
+    # print(timeit.timeit(lambda: spatialConv(gray_image, kernel), number=10))
     exit()
 
 
 def parserAdd_hw3(parser):
-    parser.add_argument('--medianfilter', type=str,  help="Median Filter",
-                        func=medianFilter, action=OrderAction)
-    parser.add_argument('--minfilter',    type=str,  help="Min Filter",
-                        func=minFilter,    action=OrderAction)
-    parser.add_argument('--maxfilter',    type=str,  help="Max Filter",
-                        func=maxFilter,    action=OrderAction)
+    parser.add_argument("--medianfilter",  type=str,   metavar=("aaaxbbb"),
+                        func=medianFilter, action=OrderAction,
+                        help="Median Filter")
+    parser.add_argument("--minfilter",     type=str,   metavar=("aaaxbbb"),
+                        func=minFilter,    action=OrderAction,
+                        help="Min Filter")
+    parser.add_argument("--maxfilter",     type=str,   metavar=("aaaxbbb"),
+                        func=maxFilter,    action=OrderAction,
+                        help="Max Filter")
+    parser.add_argument("--ideallowpass",  type=float, metavar=("cutoff"),
+                        func=idealLowpass, action=OrderAction,
+                        help="Low pass: ideal(cutoff)")
+    parser.add_argument("--gaussian",      type=float, metavar=("cutoff"),
+                        func=gaussian,     action=OrderAction,
+                        help="Low pass: gaussian(cutoff)")
+    parser.add_argument("--butterworth",   type=float, metavar=("cutoff", "n"), nargs=2,
+                        func=butterWorth,  action=OrderAction,
+                        help="Low pass: butterworth(cutoff, n)")
+    parser.add_argument("--unsharp",       type=float, metavar=("gaussin cutoff", "n"), nargs=2,
+                        func=unsharp,      action=OrderAction,
+                        help="High pass: (ori - gaussian(cutoff)) * k + ori")
+    parser.add_argument("--sobelh",        type=float, metavar=("k"),
+                        func=sobelH,       action=OrderAction,
+                        help="High pass: sobel horizontal * k + ori")
+    parser.add_argument("--sobelv",        type=float, metavar=("k"),
+                        func=sobelV,       action=OrderAction,
+                        help="High pass: sobel vertical * k + ori")
+    parser.add_argument("--robera",        type=float, metavar=("k"),
+                        func=roberA,       action=OrderAction,
+                        help="High pass: Rober cross-gradient * k + ori")
+    parser.add_argument("--roberb",        type=float, metavar=("k"),
+                        func=roberB,       action=OrderAction,
+                        help="High pass: Rober cross-gradient * k + ori")
+    parser.add_argument("--laplacian4",    type=float, metavar=("k"),
+                        func=laplacian4,   action=OrderAction,
+                        help="High pass: Laplacian_4neightbor * k + ori")
+    parser.add_argument("--laplacian8",    type=float, metavar=("k"),
+                        func=laplacian8,   action=OrderAction,
+                        help="High pass: Laplacian_8neightbor * k + ori")
+    parser.add_argument("--kernel",       type=str, metavar=("arr"),
+                        func=customKernal,   action=OrderAction,
+                        help="Convolute with your custom array: e.g.  \"0 0 0;0 1 0; 0 0 0\" ")
 
 
 if __name__ == "__main__":
-    test()
-    parser = argparse.ArgumentParser(description="HW2")
+    # test()
+    parser = argparse.ArgumentParser(description="HW3")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)
     hw2.parserAdd_hw2(parser)

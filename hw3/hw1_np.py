@@ -53,18 +53,25 @@ def parserAdd_hw1(parser):
     """
     Add command for operation in hw1
     """
-    parser.add_argument('--read64',   type=str,   help="The image you want to read with .64 extension",
-                        func=read64,    layer=(0, 1), action=OrderAction)
-    parser.add_argument('--add',      type=float, help="Add a number to the image",
+    parser.add_argument("--read64",     type=str,     metavar=(".64filepath"),
+                        func=read64,    layer=(0, 1), action=OrderAction,
+                        help="The image you want to read with .64 extension")
+    parser.add_argument("--add",        type=float,
+                        help="Add a number to the image",
                         func=imageAdd,                action=OrderAction)
-    parser.add_argument('--diff',     nargs=0,    help="Add a number to the image",
-                        func=imageDiff, layer=(2, 0), action=OrderAction)
-    parser.add_argument('--avg',      nargs=0,    help="Add a image to the image",
-                        func=imageAvg,  layer=(2, 0),      action=OrderAction)
-    parser.add_argument('--multiply', type=float, help="Multiply a number to the image",
-                        func=imageMult,               action=OrderAction)
-    parser.add_argument('--special',  nargs=0,    help="Operator of hw1-2-4",
-                        func=image_special_func,      action=OrderAction)
+    parser.add_argument("--diff",       nargs=0,
+                        func=imageDiff, layer=(2, 0), action=OrderAction,
+                        help="Add a number to the image")
+    parser.add_argument("--avg",        nargs=0,
+                        func=imageAvg,  layer=(2, 0), action=OrderAction,
+                        help="Add a image to the image")
+    parser.add_argument("--multiply",   type=float, metavar=(""),
+
+                        func=imageMult,               action=OrderAction,
+                        help="Multiply a number to the image")
+    parser.add_argument("--special",     nargs=0,     metavar=(""),
+                        func=image_special_func,      action=OrderAction,
+                        help="Operator of hw1-2-4")
 
 
 def limitImg(func):

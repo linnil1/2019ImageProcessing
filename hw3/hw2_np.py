@@ -83,9 +83,9 @@ def bilinear(img, new_shape):
     # prepare data
     print(f"{img.shape} -> {new_shape}")
     if len(img.shape) == 2:
-        data = np.pad(img, ((0, 1), (0, 1)), 'constant')
+        data = np.pad(img, ((0, 1), (0, 1)), "constant")
     else:
-        data = np.pad(img, ((0, 1), (0, 1), (0, 0)), 'constant')
+        data = np.pad(img, ((0, 1), (0, 1), (0, 0)), "constant")
 
     # prepare x,y
     ksizex = img.shape[0] / new_shape[0]
@@ -106,9 +106,7 @@ def bilinear(img, new_shape):
 
 
 def resizeFromStr(img, res):
-    if not re.match(r"^\s*\d+\s*x\s*\d+\s*$", res):
-        raise ValueError("The value is not like this format 123x123")
-    return bilinear(img, [int(i) for i in res.split('x')])
+    return bilinear(img, utils.parseSize(res))
 
 
 def histogramEqualize(img):
@@ -142,22 +140,30 @@ def test():
 
 
 def parserAdd_hw2(parser):
-    parser.add_argument('--read',      type=str,   help="The image you want to read",
-                        func=readRGB,   layer=(0, 1),   action=OrderAction)
-    parser.add_argument('--graya',     nargs=0,        help="Convert to gray scale by A method",
-                        func=toGrayA,                   action=OrderAction)
-    parser.add_argument('--grayb',     nargs=0,    help="Convert to gray scale by B method",
-                        func=toGrayB,                   action=OrderAction)
-    parser.add_argument('--histogram', nargs=0,    help="Display Histogram",
-                        func=showHist, layer=(1, None), action=OrderAction)
-    parser.add_argument('--threshold', type=float, help="Set Threshold to make the grayscale image binary",
-                        func=setThreshold,              action=OrderAction)
-    parser.add_argument('--resize',    type=str,   help="Resize the image to XxY. Usage: --resize 1000x1000",
-                        func=resizeFromStr,             action=OrderAction)
-    parser.add_argument('--equalize',  nargs=0,    help="Perform histogram equalization",
-                        func=histogramEqualize,         action=OrderAction)
-    parser.add_argument('--gamma',     type=float, help="Perform gamma correction",
-                        func=gammaCorrection,           action=OrderAction)
+    parser.add_argument("--read",      type=str,        metavar=("ImageFilePath"),
+                        func=readRGB,   layer=(0, 1),   action=OrderAction,
+                        help="The image you want to read")
+    parser.add_argument("--graya",     nargs=0,
+                        func=toGrayA,                   action=OrderAction,
+                        help="Convert to gray scale by A method")
+    parser.add_argument("--grayb",     nargs=0,
+                        func=toGrayB,                   action=OrderAction,
+                        help="Convert to gray scale by B method")
+    parser.add_argument("--histogram", nargs=0,
+                        func=showHist, layer=(1, None), action=OrderAction,
+                        help="Display Histogram")
+    parser.add_argument("--threshold", type=float,
+                        func=setThreshold,              action=OrderAction,
+                        help="Set Threshold to make the grayscale image binary")
+    parser.add_argument("--resize",    type=str,        metavar=("aaaxbbb"),
+                        func=resizeFromStr,             action=OrderAction,
+                        help="Resize the image to XxY. Usage: --resize 1000x1000")
+    parser.add_argument("--equalize",  nargs=0,
+                        func=histogramEqualize,         action=OrderAction,
+                        help="Perform histogram equalization")
+    parser.add_argument("--gamma",     type=float,
+                        func=gammaCorrection,           action=OrderAction,
+                        help="Perform gamma correction")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import hw1_np as hw1
 import hw2_np as hw2
+import hw3_np as hw3
 import utils
 
 
@@ -169,7 +170,7 @@ class ImageWidget(CommadWidget):
         """
         This method will find out the display method by your input
         """
-        img = self.img
+        img = self.img.copy()
         if len(img.shape) == 3:
             qimage = QImage(np.uint8(img * 255), img.shape[1], img.shape[0],
                             img.shape[1] * img.shape[2], QImage.Format_RGB888)
@@ -238,23 +239,34 @@ class ImageSimple(ImageWidget):
 
 class ImageSpinbox(ImageWidget):
     """
-    ImageSpinbox inherited from ImageWidget and has spinbox feature
+    ImageSpinbox inherited from ImageWidget and has spinbox feature.
+    The input_arr contains a list of tuple that given
+    type, range, default value, name.
     """
-    def __init__(self, title, func,
-                 input_type, input_range, input_default, n_parent=1):
+    def __init__(self, title, func, input_arr, n_parent=1):
         super().__init__(title, func, n_parent)
-        if input_type is float:
-            self.widget_input = QDoubleSpinBox()
-        elif input_type is int:
-            self.widget_input = QSpinBox()
-        self.widget_input.setRange(*input_range)
-        self.widget_input.setValue(input_default)
-        self.widget_input.valueChanged.connect(self.update)
-        self.layout.addWidget(self.widget_input)
+        self.widget_inputs = []
+        layout = QBoxLayout(QBoxLayout.LeftToRight)
+        for i in input_arr:
+            input_type, input_range, input_default = i[:3]
+            if len(i) >= 4:
+                layout.addWidget(QLabel(i[3]))
+            if input_type is float:
+                widget_input = QDoubleSpinBox()
+            elif input_type is int:
+                widget_input = QSpinBox()
+            widget_input.setRange(*input_range)
+            widget_input.setValue(input_default)
+            widget_input.valueChanged.connect(self.update)
+            self.widget_inputs.append(widget_input)
+            layout.addWidget(widget_input)
+        self.layout.addLayout(layout)
 
     def updateThis(self):
-        arg = self.widget_input.value()
-        self.img = self.func(*self.getParentImg(), arg)
+        args = []
+        for widget_input in self.widget_inputs:
+            args.append(widget_input.value())
+        self.img = self.func(*self.getParentImg(), *args)
 
 
 class ImageText(ImageWidget):
@@ -341,7 +353,6 @@ def moduleAdd(module_name, args):
     """
     Add new module
     """
-    # print(module_name, args)
     try:
         module = module_name(*args)
         module.setupWithAll(now_modules)
@@ -414,38 +425,57 @@ def alert(error):
 
 
 def test():
-    filename = "data/kemono_friends.jpg"
+    filename = "data/Image 3-4.jpg"
     # filename = "data/stackoverflow.jpg"
     img = hw2.readRGB(filename)
     moduleAdd(*modules[1])
     now_modules[0].img = img
     now_modules[0].update()
-    moduleAdd(*modules[-3])
-    moduleAdd(*modules[-2])
+    moduleAdd(*modules[9])
+    moduleAdd(*modules[-1])
 
 
 # Predefine modules
 modules = [
     # read image module
-    (ImageReading,   ("Read 64 formatted image",  hw1.read64, "64 formatted image (*.64)")),
-    (ImageReading,   ("Read color image",         hw2.readRGB, "JPG or BMP image (*.jpg *.jpeg *.bmp)")),
+    (ImageReading,   ("Read .64 image",           hw1.read64, "64 formatted image (*.64)")),
+    (ImageReading,   ("Read color image",         hw2.readRGB, "JPG or BMP image (*.JPG *.JPEG *.jpg *.jpeg *.bmp)")),
     # histogram module
     (ImageHistogram, ("Histogram (32bin)",        hw1.getHist)),
+    # util module
+    (ImageSimple,    ("Copy",                     utils.copyImg)),
     # hw1 module
-    (ImageSpinbox,   ("Add number to image",      hw1.imageAdd, float, (-255, 255), 0)),
-    (ImageSpinbox,   ("Multiply number to image", hw1.imageMult, float, (0, 255), 1)),
+    (ImageSpinbox,   ("Add number to image",      hw1.imageAdd, [(float, (-255, 255), 0)])),
+    (ImageSpinbox,   ("Multiply number to image", hw1.imageMult, [(float, (0, 255), 1)])),
     (ImageSimple,    ("Difference between image", hw1.imageDiff, 2)),
     (ImageSimple,    ("Average between image",    hw1.imageAvg, 2)),
     (ImageSimple,    ("Special function in hw1",  hw1.image_special_func)),
     # hw2 module
     (ImageSimple,    ("Gray scale (A)",           hw2.toGrayA)),
     (ImageSimple,    ("Gray scale (B)",           hw2.toGrayB)),
-    (ImageSpinbox,   ("Set threshold",            hw2.setThreshold, int, (0, 255), 128)),
+    (ImageSpinbox,   ("Threshold",                hw2.setThreshold, [(int, (0, 255), 128)])),
     (ImageSimple,    ("Histogram equalization",   hw2.histogramEqualize)),
-    (ImageSpinbox,   ("Gamma Correction",         hw2.gammaCorrection, float, (-100, 100), 1)),
+    (ImageSpinbox,   ("Gamma Correction",         hw2.gammaCorrection, [(float, (-100, 100), 1)])),
     (ImageText,      ("Resize (Bilinear)",        hw2.resizeFromStr, "600x400", "")),
-    # util module
-    (ImageSimple,    ("Copy",                     utils.copyImg)),
+    # hw3 module
+    (ImageText,      ("Median Filter",            hw3.medianFilter, "3x3", "")),
+    (ImageText,      ("Min Filter",               hw3.minFilter, "3x3", "")),
+    (ImageText,      ("Max Filter",               hw3.maxFilter, "3x3", "")),
+    (ImageSpinbox,   ("Low pass: ideal",          hw3.idealLowpass, [(float, (0, 1000), 20)])),
+    (ImageSpinbox,   ("Low pass: gaussian",       hw3.gaussian, [(float, (0, 1000), 20)])),
+    (ImageSpinbox,   ("Low pass: butterworth",    hw3.butterWorth, [(float, (1, 1000), 20, "cutoff"),
+                                                                    (float, (0, 1000), 1, "n")])),
+    (ImageSpinbox,   ("High pass: unsharp",       hw3.unsharp, [(float, (1, 1000), 20),
+                                                                (float, (0, 100), 2)])),
+    (ImageSpinbox,   ("High pass: sobelH",        hw3.sobelH, [(float, (1, 1000), 2)])),
+    (ImageSpinbox,   ("High pass: sobelV",        hw3.sobelV, [(float, (1, 1000), 2)])),
+    (ImageSpinbox,   ("High pass: roberA",        hw3.roberA, [(float, (1, 1000), 2)])),
+    (ImageSpinbox,   ("High pass: roberX",        hw3.roberB, [(float, (1, 1000), 2)])),
+    (ImageSpinbox,   ("High pass: laplacian4",    hw3.laplacian4, [(float, (1, 1000), 2)])),
+    (ImageSpinbox,   ("High pass: laplacian8",    hw3.laplacian8, [(float, (1, 1000), 2)])),
+    (ImageText,      ("Custom Kernel",            hw3.customKernal, "0 0 0; 0 1 0; 0 0 0")),
+    (ImageSpinbox,   ("LoG",                      hw3.LoG, [(float, (1, 100), 1, "sigma"),
+                                                            (float, (0, 1), 0.3, "Threshold")])),
 ]
 
 # setup and run

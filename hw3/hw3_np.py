@@ -3,6 +3,9 @@ Author: linnil1
 Objective: Image Processing HW3
 Description: Some operations are implemented in the file
 * Min, max, median filter
+* laplacian, sobel, rober cross gradient filter
+* gaussian ideal butterworth filter
+* LoG
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -124,7 +127,6 @@ def customKernal(img, txt):
     Transfer a text to kernel array
     """
     arr = [[i for i in re.split(" |,", t) if i] for t in re.split("\n|;", txt)]
-    print(arr)
     krn = np.array(arr, dtype=np.float)
     return spatialConv(img, krn)
 
@@ -234,7 +236,7 @@ def parserAdd_hw3(parser):
     parser.add_argument("--butterworth",   type=float, metavar=("cutoff", "n"), nargs=2,
                         func=butterWorth,  action=OrderAction,
                         help="Low pass: butterworth(cutoff, n)")
-    parser.add_argument("--unsharp",       type=float, metavar=("gaussin cutoff", "n"), nargs=2,
+    parser.add_argument("--unsharp",       type=float, metavar=("gaussin cutoff", "k"), nargs=2,
                         func=unsharp,      action=OrderAction,
                         help="High pass: (ori - gaussian(cutoff)) * k + ori")
     parser.add_argument("--sobelh",        type=float, metavar=("k"),

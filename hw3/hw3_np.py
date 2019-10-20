@@ -49,7 +49,7 @@ def spatialConv(img, krn):
     # padding
     size_img = np.array(img.shape)
     size_krn = np.array(krn.shape)
-    size = np.max(np.stack([size_img, size_krn]), axis=0)
+    size = size_img + size_img - 1
     pad_img = np.pad(img, [(0, size[0] - size_img[0]),
                            (0, size[1] - size_img[1])], "constant")
     pad_krn = np.pad(krn, [(0, size[0] - size_krn[0]),
@@ -181,26 +181,34 @@ def butterWorth(img, cutoff, n):
     return feqOperation(img, butterWorthFilter)
 
 
+def LoG(img, sig, threshold=0.2):
+    """
+    Laplacian of Gaussian with threshold
+    """
+    n = int(sig * 6)
+    n += (n % 2 == 0)
+    j, i = np.meshgrid(np.arange(n) - n // 2,
+                       np.arange(n) - n // 2)
+    krn = (i ** 2 + j ** 2 - 2 * sig ** 2) / (sig ** 4) * \
+        np.exp(-(i ** 2 + j ** 2) / (2 * sig ** 2))
+    # krn -= krn.sum()
+    res = spatialConv(img, krn)
+    threshold = res.max() * threshold
+    return res > threshold
+
+
 def test():
     # read
     real_image = hw2.readRGB("data/Image 3-2.JPG")
     gray_image = hw2.toGrayA(real_image)
-    customKernal(gray_image, "123 12;123 123")
-    exit()
+
     plt.figure(figsize=(10, 8))
-    plt.subplot(2, 2, 1)
-    plt.title("Original")
-    plt.imshow(gray_image, cmap="gray")
-    plt.subplot(2, 2, 2)
-    plt.title("Rober A")
-    a = roberA(gray_image, k=2, needabs=True)
-    plt.imshow(tmp, cmap="gray")
-    plt.subplot(2, 2, 3)
-    plt.title("Apply the filter")
-    plt.imshow(tmp1, cmap="gray")
-    plt.subplot(2, 2, 4)
-    plt.title("Apply the filter and add to original")
-    plt.imshow(a, cmap="gray")
+    plt.subplot(1, 2, 1)
+    plt.title("laplacian after gaussian")
+    plt.imshow(laplacian8(gaussian(gray_image, 100), 1), cmap="gray")
+    plt.subplot(1, 2, 2)
+    plt.title("gaussian after laplacian")
+    plt.imshow(gaussian(laplacian8(gray_image, 1), 100), cmap="gray")
     plt.show()
     # import timeit
     # print(timeit.timeit(lambda: spatialConv(gray_image, kernel), number=10))
@@ -247,9 +255,12 @@ def parserAdd_hw3(parser):
     parser.add_argument("--laplacian8",    type=float, metavar=("k"),
                         func=laplacian8,   action=OrderAction,
                         help="High pass: Laplacian_8neightbor * k + ori")
-    parser.add_argument("--kernel",       type=str, metavar=("arr"),
-                        func=customKernal,   action=OrderAction,
+    parser.add_argument("--kernel",        type=str, metavar=("arr"),
+                        func=customKernal, action=OrderAction,
                         help="Convolute with your custom array: e.g.  \"0 0 0;0 1 0; 0 0 0\" ")
+    parser.add_argument("--log",           type=float, metavar=("sigma", "threshold"), nargs=2,
+                        func=LoG,          action=OrderAction,
+                        help="Laplacian of Gaussian(Threshold = max * threshold)")
 
 
 if __name__ == "__main__":

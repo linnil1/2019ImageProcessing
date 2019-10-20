@@ -19,7 +19,6 @@ class Command():
         return f"<{self.dest} {self.prev}-{self.output}>{self.value}"
 
     def run(self, args):
-        print(self.value)
         return self.func(*args, *self.value)
 
 

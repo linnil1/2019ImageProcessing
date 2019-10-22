@@ -236,7 +236,7 @@ def parserAdd_hw3(parser):
     parser.add_argument("--butterworth",   type=float, metavar=("cutoff", "n"), nargs=2,
                         func=butterWorth,  action=OrderAction,
                         help="Low pass: butterworth(cutoff, n)")
-    parser.add_argument("--unsharp",       type=float, metavar=("gaussin cutoff", "k"), nargs=2,
+    parser.add_argument("--unsharp",       type=float, metavar=("k", "gaussin cutoff"), nargs=2,
                         func=unsharp,      action=OrderAction,
                         help="High pass: (ori - gaussian(cutoff)) * k + ori")
     parser.add_argument("--sobelh",        type=float, metavar=("k"),

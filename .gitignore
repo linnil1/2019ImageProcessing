@@ -1,6 +1,7 @@
 .*.swp
 out
 build/
+dist
 *.zip
 __pycache__
 Homework*

@@ -26,6 +26,7 @@ shutil.move(f"{src}/hw{args.hw}.pdf", f"{base}/{name}.pdf")
 shutil.copy2(f"{src}/run.sh", f"{src}/HW{args.hw}.sh")
 
 # build exe for windows
+print("Make sure your env is all-set. You can check by ./setup.sh in hw folder.")
 subprocess.Popen(["pyinstaller", "-F", "qt.py"], cwd=f"hw{args.hw}/").wait()
 shutil.move(f"hw{args.hw}/dist/qt.exe", f"{src}/HW{args.hw}.exe")
 

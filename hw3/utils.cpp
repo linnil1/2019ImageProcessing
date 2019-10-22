@@ -2,12 +2,13 @@
  * Title: Some utilities function speed up by cpp written here.
  * Author: linnil1
  */
+#define _USE_MATH_DEFINES
 #include "MyImg.h"
 #include <functional>
-#include <complex>
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <complex>
 
 #define cmp std::complex<double>
 #define vcmp std::vector<cmp>

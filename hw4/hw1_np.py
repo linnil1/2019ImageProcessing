@@ -9,13 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import utils
 import argparse
+from functools import wraps
 OrderAction = utils.OrderAction
 
 
 def map64(ch):
-    """
-    Map 32 character to number
-    """
+    """ Map 32 character to number """
     if ord('0') <= ord(ch) <= ord('9'):
         return ord(ch) - ord('0')
     elif ord('A') <= ord(ch) <= ord('Z'):
@@ -26,9 +25,7 @@ def map64(ch):
 
 
 def read64(filename):
-    """
-    Read file that contained 64 formatted image
-    """
+    """ Read: 64 formatted image """
     read_lines = open(filename).readlines()
     real_image = [[map64(ch) for ch in line if map64(ch) is not None]
                                    for line in read_lines]
@@ -38,9 +35,7 @@ def read64(filename):
 
 
 def getHist(img):
-    """
-    Calculate histogram in image
-    """
+    """ Calculate histogram in image """
     arr = np.array([])
     arr.resize(32)
     map32 = np.uint8(img * 31).flatten()
@@ -54,24 +49,17 @@ def parserAdd_hw1(parser):
     Add command for operation in hw1
     """
     parser.add_argument("--read64",     type=str,     metavar=(".64filepath"),
-                        func=read64,    layer=(0, 1), action=OrderAction,
-                        help="The image you want to read with .64 extension")
+                        func=read64,    layer=(0, 1), action=OrderAction)
     parser.add_argument("--add",        type=float,
-                        help="Add a number to the image",
                         func=imageAdd,                action=OrderAction)
     parser.add_argument("--diff",       nargs=0,
-                        func=imageDiff, layer=(2, 0), action=OrderAction,
-                        help="Add a number to the image")
+                        func=imageDiff, layer=(2, 0), action=OrderAction)
     parser.add_argument("--avg",        nargs=0,
-                        func=imageAvg,  layer=(2, 0), action=OrderAction,
-                        help="Add a image to the image")
-    parser.add_argument("--multiply",   type=float, metavar=(""),
-
-                        func=imageMult,               action=OrderAction,
-                        help="Multiply a number to the image")
-    parser.add_argument("--special",     nargs=0,     metavar=(""),
-                        func=image_special_func,      action=OrderAction,
-                        help="Operator of hw1-2-4")
+                        func=imageAvg,  layer=(2, 0), action=OrderAction)
+    parser.add_argument("--multiply",   type=float,   metavar=(""),
+                        func=imageMult,               action=OrderAction)
+    parser.add_argument("--special",    nargs=0,      metavar=(""),
+                        func=image_special_func,      action=OrderAction)
 
 
 def limitImg(func):
@@ -79,6 +67,7 @@ def limitImg(func):
     Limit the image value from 0 to 1.
     Use it as a decorator.
     """
+    @wraps(func)
     def wrapFunc(*args, **kwargs):
         img = func(*args, **kwargs)
         img[img > 1] = 1
@@ -89,9 +78,7 @@ def limitImg(func):
 
 @limitImg
 def imageMult(img, num):
-    """
-    Multiple the image by a constant
-    """
+    """ Multiple the image by a constant """
     return img * num
 
 
@@ -106,8 +93,8 @@ def imageAdd(img, num):
 
 def imageDiff(img1, img2):
     """
-    Get the difference of two images
-    the equation is img1 - img2 and set 0.5 as equal
+    Difference of two images.
+    the equation is (img1 - img2 + 1) / 2 which set 0.5 as equal
     """
     if img1.shape != img2.shape:
         raise RuntimeError("Shape is different")
@@ -117,7 +104,7 @@ def imageDiff(img1, img2):
 @limitImg
 def imageAvg(img1, img2):
     """
-    Make average of two image pixelwisely.
+    Average of two image pixelwisely.
     """
     if img1.shape != img2.shape:
         raise RuntimeError("Shape is different")
@@ -127,7 +114,7 @@ def imageAvg(img1, img2):
 @limitImg
 def image_special_func(img):
     """
-    Special operation to this image
+    Rigt - Left
     """
     return img[:, :-1] - img[:, 1:]
 

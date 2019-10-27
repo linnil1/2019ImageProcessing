@@ -29,9 +29,9 @@ class CommadWidget():
     """
     Command Widget, a basic widget for image and histogram
     """
-    def __init__(self, title, func, n_parent=1, child=True):
-        self.title = title
+    def __init__(self, func, n_parent=1, child=True):
         self.func = func
+        self.title = utils.getDoc(func)
         self.child = child
         self.n_parent = n_parent
         self.index = np.inf
@@ -39,7 +39,7 @@ class CommadWidget():
         # setup layout and title
         layout = QBoxLayout(QBoxLayout.TopToBottom)
         # setup title
-        self.title_widget = QLabel(title)
+        self.title_widget = QLabel(self.title)
         self.title_widget.setAlignment(Qt.AlignHCenter)
         layout.addWidget(self.title_widget)
         self.layout = layout
@@ -193,8 +193,8 @@ class ImageReading(ImageWidget):
     """
     The layout of readRGB, read64
     """
-    def __init__(self, text, func, image_format):
-        super().__init__(text, func, n_parent=0)
+    def __init__(self, func, image_format):
+        super().__init__(func, n_parent=0)
         self.image_format = image_format
 
         # load image button
@@ -243,8 +243,8 @@ class ImageSpinbox(ImageWidget):
     The input_arr contains a list of tuple that given
     type, range, default value, name.
     """
-    def __init__(self, title, func, input_arr, n_parent=1):
-        super().__init__(title, func, n_parent)
+    def __init__(self, func, input_arr, n_parent=1):
+        super().__init__(func, n_parent)
         self.widget_inputs = []
         layout = QBoxLayout(QBoxLayout.LeftToRight)
         for i in input_arr:
@@ -273,9 +273,9 @@ class ImageText(ImageWidget):
     """
     ImageSpinbox inherited from ImageWidget and has spinbox feature
     """
-    def __init__(self, title, func,
+    def __init__(self, func,
                  input_default="", input_mask="", n_parent=1):
-        super().__init__(title, func, n_parent)
+        super().__init__(func, n_parent)
         self.widget_input = QLineEdit()
         self.widget_input.setInputMask(input_mask)
         self.widget_input.setText(input_default)
@@ -291,8 +291,8 @@ class ImageHistogram(CommadWidget):
     """
     The layout of histogram
     """
-    def __init__(self, title, func):
-        super().__init__(title, func, child=False)
+    def __init__(self, func):
+        super().__init__(func, child=False)
 
         # setup bar chart widget
         self.widget = QChartView()
@@ -384,10 +384,10 @@ def setUpMenu():
     # Menu for adding module
     menu_modules = menubar.addMenu("Modules")
     for i in range(len(modules)):
-        act_mode = menu_modules.addAction(modules[i][1][0])
+        act_mode = menu_modules.addAction(utils.getDoc(modules[i][1]))
         # Be carefor to python lambda function
         act_mode.triggered.connect(
-                (lambda m: lambda: moduleAdd(*m))(modules[i]))
+                (lambda m: lambda: moduleAdd(m[0], m[1:]))(modules[i]))
 
     window.setMenuWidget(menubar)
 
@@ -438,45 +438,45 @@ def test():
 # Predefine modules
 modules = [
     # read image module
-    (ImageReading,   ("Read .64 image",           hw1.read64, "64 formatted image (*.64)")),
-    (ImageReading,   ("Read color image",         hw2.readRGB, "JPG or BMP image (*.JPG *.JPEG *.jpg *.jpeg *.bmp)")),
+    (ImageReading, hw1.read64,           "64 formatted image (*.64)"),
+    (ImageReading, hw2.readRGB,          "JPG or BMP image (*.JPG *.JPEG *.jpg *.jpeg *.bmp)"),
     # histogram module
-    (ImageHistogram, ("Histogram (32bin)",        hw1.getHist)),
+    (ImageHistogram, hw1.getHist),
     # util module
-    (ImageSimple,    ("Copy",                     utils.copyImg)),
+    (ImageSimple,  utils.copyImg),
     # hw1 module
-    (ImageSpinbox,   ("Add number to image",      hw1.imageAdd, [(float, (-255, 255), 0)])),
-    (ImageSpinbox,   ("Multiply number to image", hw1.imageMult, [(float, (0, 255), 1)])),
-    (ImageSimple,    ("Difference between image", hw1.imageDiff, 2)),
-    (ImageSimple,    ("Average between image",    hw1.imageAvg, 2)),
-    (ImageSimple,    ("Special function in hw1",  hw1.image_special_func)),
+    (ImageSpinbox, hw1.imageAdd,         [(float, (-255, 255), 0)]),
+    (ImageSpinbox, hw1.imageMult,        [(float, (0, 255), 1)]),
+    (ImageSimple,  hw1.imageDiff, 2),
+    (ImageSimple,  hw1.imageAvg, 2),
+    (ImageSimple,  hw1.image_special_func),
     # hw2 module
-    (ImageSimple,    ("Gray scale (A)",           hw2.toGrayA)),
-    (ImageSimple,    ("Gray scale (B)",           hw2.toGrayB)),
-    (ImageSpinbox,   ("Threshold",                hw2.setThreshold, [(int, (0, 255), 128)])),
-    (ImageSimple,    ("Histogram equalization",   hw2.histogramEqualize)),
-    (ImageSpinbox,   ("Gamma Correction",         hw2.gammaCorrection, [(float, (-100, 100), 1)])),
-    (ImageText,      ("Resize (Bilinear)",        hw2.resizeFromStr, "600x400", "")),
+    (ImageSimple,  hw2.toGrayA),
+    (ImageSimple,  hw2.toGrayB),
+    (ImageSpinbox, hw2.setThreshold,     [(int, (0, 255), 128)]),
+    (ImageSimple,  hw2.histogramEqualize),
+    (ImageSpinbox, hw2.gammaCorrection,  [(float, (-100, 100), 1)]),
+    (ImageText,    hw2.bilinear,         "600x400", ""),
     # hw3 module
-    (ImageText,      ("Filter: Median",           hw3.medianFilter, "3x3", "")),
-    (ImageText,      ("Filter: max",              hw3.minFilter, "3x3", "")),
-    (ImageText,      ("Filter: min",              hw3.maxFilter, "3x3", "")),
-    (ImageText,      ("Filter: mean",             hw3.boxFilter, "3x3", "")),
-    (ImageSpinbox,   ("Low pass: ideal",          hw3.idealLowpass, [(float, (0, 1000), 20, "cutoff")])),
-    (ImageSpinbox,   ("Low pass: gaussian",       hw3.gaussian, [(float, (0, 1000), 20, "cutoff")])),
-    (ImageSpinbox,   ("Low pass: butterworth",    hw3.butterWorth, [(float, (1, 1000), 20, "cutoff"),
-                                                                    (float, (0, 1000), 1, "n")])),
-    (ImageSpinbox,   ("High pass: unsharp",       hw3.unsharp, [(float, (1, 1000), 2, "k"),
-                                                                (float, (0, 1000), 20, "cutoff")])),
-    (ImageSpinbox,   ("High pass: sobelH",        hw3.sobelH, [(float, (1, 1000), 2)])),
-    (ImageSpinbox,   ("High pass: sobelV",        hw3.sobelV, [(float, (1, 1000), 2)])),
-    (ImageSpinbox,   ("High pass: roberA",        hw3.roberA, [(float, (1, 1000), 2)])),
-    (ImageSpinbox,   ("High pass: roberX",        hw3.roberB, [(float, (1, 1000), 2)])),
-    (ImageSpinbox,   ("High pass: laplacian4",    hw3.laplacian4, [(float, (1, 1000), 2)])),
-    (ImageSpinbox,   ("High pass: laplacian8",    hw3.laplacian8, [(float, (1, 1000), 2)])),
-    (ImageText,      ("Custom Kernel",            hw3.customKernal, "0 0 0; 0 1 0; 0 0 0")),
-    (ImageSpinbox,   ("LoG",                      hw3.LoG, [(float, (1, 100), 1, "sigma"),
-                                                            (float, (0, 1), 0.3, "Threshold")])),
+    (ImageText,    hw3.medianFilter,     "3x3", ""),
+    (ImageText,    hw3.minFilter,        "3x3", ""),
+    (ImageText,    hw3.maxFilter,        "3x3", ""),
+    (ImageText,    hw3.boxFilter,        "3x3", ""),
+    (ImageSpinbox, hw3.idealLowpass,     [(float, (0, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw3.gaussian,         [(float, (0, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw3.butterworth,      [(float, (1, 1000), 20, "cutoff"),
+                                          (float, (1, 1000), 1, "n")]),
+    (ImageSpinbox, hw3.unsharp,          [(float, (1, 1000), 2, "k"),
+                                          (float, (1, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw3.sobelH,           [(float, (1, 1000), 2)]),
+    (ImageSpinbox, hw3.sobelV,           [(float, (1, 1000), 2)]),
+    (ImageSpinbox, hw3.roberGx,          [(float, (1, 1000), 2)]),
+    (ImageSpinbox, hw3.roberGy,          [(float, (1, 1000), 2)]),
+    (ImageSpinbox, hw3.laplacian4,       [(float, (1, 1000), 2)]),
+    (ImageSpinbox, hw3.laplacian8,       [(float, (1, 1000), 2)]),
+    (ImageText,    hw3.customKernal,     "0 0 0; 0 1 0; 0 0 0"),
+    (ImageSpinbox, hw3.LoG,              [(float, (1, 1000), 2, "k"),
+                                          (float, (1, 100), 1, "sigma")]),
 ]
 
 # setup and run

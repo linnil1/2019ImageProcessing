@@ -22,9 +22,7 @@ OrderAction = utils.OrderAction
 
 
 def readRGB(filename):
-    """
-    The only method to read RGB file by cv2
-    """
+    """ Read: Color image """
     # img = cv2.imread(filename)
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = plt.imread(filename)
@@ -32,9 +30,7 @@ def readRGB(filename):
 
 
 def getHist(img):
-    """
-    Calculate histogram in image
-    """
+    """ Histogram """
     gray255_image = np.array(img * 255, dtype=np.int)
     gray255_image[gray255_image > 255] = 255
     arr_count = np.zeros(256)
@@ -44,18 +40,14 @@ def getHist(img):
 
 
 def toGrayA(img):
-    """
-    Gray Scale: (R + G + B) / 3
-    """
+    """ Gray Scale: (R + G + B) / 3 """
     if len(img.shape) == 2:
         return img
     return img.mean(2)
 
 
 def toGrayB(img):
-    """
-    Gray Scale: 0.299R + 0.587G + 0.114B
-    """
+    """ Gray Scale: 299R + 587G + 114B """
     if len(img.shape) == 2:
         return img
     return img.dot([0.299, 0.587, 0.114])
@@ -77,9 +69,9 @@ def linear(q, v1, v2):
 
 
 def bilinear(img, new_shape):
-    """
-    Change the shape of the image by bilinear interpoltion.
-    """
+    """ Resize by bilinear interpolation """
+    if new_shape is str:
+        new_shape = utils.parseSize(res)
     # prepare data
     print(f"{img.shape} -> {new_shape}")
     if len(img.shape) == 2:
@@ -105,14 +97,8 @@ def bilinear(img, new_shape):
                          data[int_x + 1, int_y + 1]))
 
 
-def resizeFromStr(img, res):
-    return bilinear(img, utils.parseSize(res))
-
-
 def histogramEqualize(img):
-    """
-    Perform histogram Equalization
-    """
+    """ Transformation: Histogram Equalization """
     gray255_image = np.array(img * 255, dtype=np.int)
     gray255_image[gray255_image > 255] = 1
 
@@ -122,13 +108,12 @@ def histogramEqualize(img):
 
 
 def gammaCorrection(img, num):
-    """
-    Perform gamma correction
-    """
+    """ Transformation: Gamma correction """
     return img ** num
 
 
 def showHist(img):
+    """ Display histogram """
     return utils.showHist(getHist(img))
 
 
@@ -141,29 +126,21 @@ def test():
 
 def parserAdd_hw2(parser):
     parser.add_argument("--read",      type=str,        metavar=("ImageFilePath"),
-                        func=readRGB,   layer=(0, 1),   action=OrderAction,
-                        help="The image you want to read")
+                        func=readRGB,   layer=(0, 1),   action=OrderAction)
     parser.add_argument("--graya",     nargs=0,
-                        func=toGrayA,                   action=OrderAction,
-                        help="Convert to gray scale by A method")
+                        func=toGrayA,                   action=OrderAction)
     parser.add_argument("--grayb",     nargs=0,
-                        func=toGrayB,                   action=OrderAction,
-                        help="Convert to gray scale by B method")
+                        func=toGrayB,                   action=OrderAction)
     parser.add_argument("--histogram", nargs=0,
-                        func=showHist, layer=(1, None), action=OrderAction,
-                        help="Display Histogram")
+                        func=showHist, layer=(1, None), action=OrderAction)
     parser.add_argument("--threshold", type=float,
-                        func=setThreshold,              action=OrderAction,
-                        help="Set Threshold to make the grayscale image binary")
+                        func=setThreshold,              action=OrderAction)
     parser.add_argument("--resize",    type=str,        metavar=("aaaxbbb"),
-                        func=resizeFromStr,             action=OrderAction,
-                        help="Resize the image to XxY. Usage: --resize 1000x1000")
+                        func=bilinear,                  action=OrderAction)
     parser.add_argument("--equalize",  nargs=0,
-                        func=histogramEqualize,         action=OrderAction,
-                        help="Perform histogram equalization")
+                        func=histogramEqualize,         action=OrderAction)
     parser.add_argument("--gamma",     type=float,
-                        func=gammaCorrection,           action=OrderAction,
-                        help="Perform gamma correction")
+                        func=gammaCorrection,           action=OrderAction)
 
 
 if __name__ == "__main__":

@@ -28,12 +28,11 @@ class OrderAction(argparse.Action):
     OrderAction is to store the order of command.
     store_true can be set by nargs = 0
     """
-    def __init__(self, option_strings, dest, nargs=1,
-                 layer=(1, 0), func=None, **kwargs):
-        self.nargs = nargs
+    def __init__(self, option_strings, dest, layer=(1, 0), func=None, **kwargs):
         self.command = Command(func, dest, layer)
-        super(OrderAction, self).__init__(option_strings, dest,
-                                          nargs, **kwargs)
+        if not kwargs.get("help") and func.__doc__:
+            kwargs["help"] = getDoc(func)
+        super(OrderAction, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         if "order_command" not in namespace:
@@ -43,6 +42,10 @@ class OrderAction(argparse.Action):
         c.value = values
         order_command.append(c)
         setattr(namespace, "order_command", order_command)
+
+
+def getDoc(func):
+    return func.__doc__.split(".")[0].strip()
 
 
 def parserAdd_general(parser):
@@ -67,9 +70,7 @@ def parserAdd_general(parser):
 
 
 def copyImg(img):
-    """
-    Copy the image
-    """
+    """ Copy """
     return img.copy()
 
 
@@ -78,9 +79,7 @@ def pop(img):
 
 
 def showHist(bar):
-    """
-    Show histogram
-    """
+    """ Display histogram """
     plt.figure()
     plt.title("Histogram")
     plt.bar(np.arange(bar.size), height=bar)
@@ -88,23 +87,20 @@ def showHist(bar):
 
 
 def showColor(img):
-    """
-    Show color image
-    """
+    """ Display: color image """
     plt.figure()
     plt.imshow(img)
 
 
 def showGray(img):
-    """
-    Show image in gray scale
-    """
+    """ Display: gray scale image """
     plt.figure()
     plt.imshow(img, cmap="gray")
 
 
 def show(img):
     """
+    Dispaly.
     Auto show image selected by img shape
     """
     if len(img.shape) == 3:

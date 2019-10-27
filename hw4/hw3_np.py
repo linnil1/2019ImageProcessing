@@ -16,6 +16,7 @@ import hw2_np as hw2
 import utils_cpp
 import utils
 from utils import OrderAction
+from functools import wraps
 
 
 def wrapImgWithPad(func):
@@ -23,6 +24,7 @@ def wrapImgWithPad(func):
     Wrap my own function as a decorator.
     It paded to the image and run on cpp extension then return as np.array
     """
+    @wraps(func)
     def wrapFunc(img, size):
         if type(size) is str:
             size = utils.parseSize(size)
@@ -35,20 +37,24 @@ def wrapImgWithPad(func):
 
 @wrapImgWithPad
 def medianFilter(*args, **kwargs):
+    """ Ordered Filter: Median """
     return utils_cpp.medianFilter(*args, **kwargs)
 
 
 @wrapImgWithPad
 def minFilter(*args, **kwargs):
+    """ Ordered Filter: Min """
     return utils_cpp.minFilter(*args, **kwargs)
 
 
 @wrapImgWithPad
 def maxFilter(*args, **kwargs):
+    """ Ordered Filter: Max """
     return utils_cpp.maxFilter(*args, **kwargs)
 
 
 def spatialConv(img, krn):
+    """ Convolute the input image and kernel """
     # padding
     size_img = np.array(img.shape)
     size_krn = np.array(krn.shape)
@@ -66,9 +72,10 @@ def spatialConv(img, krn):
 
 def wrapHighboostFilter(func):
     """
-    Wrap the unsharp coefficient to all high pass filter
+    Wrap the highboost coefficient to all high pass filter
     The custom function will return the convolution of img and it's kernel
     """
+    @wraps(func)
     @hw1.limitImg
     def wrapFunc(img, k=0, *args, needabs=False, **kwagrs):
         res = func(img, *args, **kwagrs)
@@ -80,51 +87,55 @@ def wrapHighboostFilter(func):
 
 @wrapHighboostFilter
 def sobelH(img):
+    """ High Pass: Sobel horizontal Highboost(k) """
     kernel = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
     return spatialConv(img, kernel)
 
 
 @wrapHighboostFilter
 def sobelV(img):
+    """ High Pass: Sobel vertical Highboost(k) """
     kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
     return spatialConv(img, kernel)
 
 
 @wrapHighboostFilter
 def laplacian4(img):
+    """ High Pass: Laplacian4 Highboost(k) """
     kernel = -np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
     return spatialConv(img, kernel)
 
 
 @wrapHighboostFilter
 def laplacian8(img):
+    """ High Pass: Laplacian8 Highboost(k) """
     kernel = -np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]])
     return spatialConv(img, kernel)
 
 
 @wrapHighboostFilter
 def unsharp(img, sig):
-    """
-    Unsharp method: high pass = ori - lowpass
-    """
+    """ High Pass: unsharp with Highboost(k) """
     return img - gaussian(img, sig)
 
 
 @wrapHighboostFilter
-def roberA(img):
+def roberGx(img):
+    """ High Pass: Rober Gx with Highboost(k)"""
     kernel = np.array([[-1, 0], [0, 1]])
     return spatialConv(img, kernel)
 
 
 @wrapHighboostFilter
-def roberB(img):
+def roberGy(img):
+    """ High Pass: Rober Gy with Highboost(k)"""
     kernel = np.array([[0, -1], [1, 0]])
     return spatialConv(img, kernel)
 
 
 def customKernal(img, txt):
     """
-    Transfer a text to kernel array
+    Costom kernel convolute with image
     """
     arr = [[i for i in re.split(" |,", t) if i] for t in re.split("\n|;", txt)]
     krn = np.array(arr, dtype=np.float)
@@ -132,9 +143,7 @@ def customKernal(img, txt):
 
 
 def boxFilter(img, size):
-    """
-    Mean filter
-    """
+    """ Order Filter: Mean """
     if type(size) is str:
         size = utils.parseSize(size)
     krn = np.ones(size, dtype=np.float) / size[0] / size[1]
@@ -143,7 +152,7 @@ def boxFilter(img, size):
 
 def feqOperation(img, func):
     """
-    Editing the map by func in frequency domain.
+    Filtering the map by func in frequency domain.
     The input of func is a distance to center
     """
     # fft
@@ -167,36 +176,53 @@ def feqOperation(img, func):
 
 
 def gaussian(img, sig):
-    """
-    Gaussian Blur
-    """
+    """ Low Pass: Gaussian """
     def gaussianFilter(dest):
         return np.exp(-dest / sig ** 2)
     return feqOperation(img, gaussianFilter)
 
 
 def idealLowpass(img, cutoff):
-    """
-    Low pass filetr by ideal cutoff
-    """
+    """ Low Pass: Ideal """
     def idealFilter(dest):
         return dest < cutoff ** 2
     return feqOperation(img, idealFilter)
 
 
-def butterWorth(img, cutoff, n):
-    """
-    ButterWorth low pass filter
-    """
-    def butterWorthFilter(dest):
+def butterworth(img, cutoff, n):
+    """ Low Pass: ButterWorth """
+    def butterworthFilter(dest):
         return 1 / (1 + dest / (cutoff ** 2)) ** n
-    return feqOperation(img, butterWorthFilter)
+    return feqOperation(img, butterworthFilter)
 
 
-def LoG(img, sig, threshold=0.2):
-    """
-    Laplacian of Gaussian with threshold
-    """
+@wrapHighboostFilter
+def gaussianHigh(img, sig):
+    """ High Pass: Gaussian with Highboost(k) """
+    def gaussianFilter(dest):
+        return 1 - np.exp(-dest / sig ** 2)
+    return feqOperation(img, gaussianFilter)
+
+
+@wrapHighboostFilter
+def idealHighpass(img, cutoff):
+    """ High Pass: Ideal with Highboost(k) """
+    def idealFilter(dest):
+        return dest > cutoff ** 2
+    return feqOperation(img, idealFilter)
+
+
+@wrapHighboostFilter
+def butterworthHighpass(img, cutoff, n):
+    """ High Pass: ButterWorth with Highboost(k) """
+    def butterworthFilter(dest):
+        return 1 - 1 / (1 + dest / (cutoff ** 2)) ** n
+    return feqOperation(img, butterworthFilter)
+
+
+@wrapHighboostFilter
+def LoG(img, sig):
+    """ Laplacian of Gaussian with Highboost(k) """
     n = int(sig * 6)
     n += (n % 2 == 0)
     j, i = np.meshgrid(np.arange(n) - n // 2,
@@ -204,23 +230,19 @@ def LoG(img, sig, threshold=0.2):
     krn = (i ** 2 + j ** 2 - 2 * sig ** 2) / (sig ** 4) * \
         np.exp(-(i ** 2 + j ** 2) / (2 * sig ** 2))
     # krn -= krn.sum()
-    res = spatialConv(img, krn)
-    threshold = res.max() * threshold
-    return res > threshold
+    return spatialConv(img, krn)
 
 
 def test():
     # read
-    real_image = hw2.readRGB("data/Image 3-2.JPG")
+    real_image = hw2.readRGB("../hw2/data/kemono_friends.jpg")
     gray_image = hw2.toGrayA(real_image)
 
     plt.figure(figsize=(10, 8))
     plt.subplot(1, 2, 1)
-    plt.title("laplacian after gaussian")
-    plt.imshow(laplacian8(gaussian(gray_image, 100), 1), cmap="gray")
+    plt.imshow(gray_image, cmap="gray")
     plt.subplot(1, 2, 2)
-    plt.title("gaussian after laplacian")
-    plt.imshow(gaussian(laplacian8(gray_image, 1), 100), cmap="gray")
+    plt.imshow(gaussianHighpass(gray_image, 1, 150), cmap="gray")
     plt.show()
     # import timeit
     # print(timeit.timeit(lambda: spatialConv(gray_image, kernel), number=10))
@@ -229,53 +251,43 @@ def test():
 
 def parserAdd_hw3(parser):
     parser.add_argument("--medianfilter",  type=str,   metavar=("aaaxbbb"),
-                        func=medianFilter, action=OrderAction,
-                        help="Median Filter")
+                        func=medianFilter, action=OrderAction)
     parser.add_argument("--minfilter",     type=str,   metavar=("aaaxbbb"),
-                        func=minFilter,    action=OrderAction,
-                        help="Min Filter")
+                        func=minFilter,    action=OrderAction)
     parser.add_argument("--maxfilter",     type=str,   metavar=("aaaxbbb"),
-                        func=maxFilter,    action=OrderAction,
-                        help="Max Filter")
+                        func=maxFilter,    action=OrderAction)
+    parser.add_argument("--boxfilter",     type=str,   metavar=("123x123"),
+                        func=boxFilter,    action=OrderAction)
     parser.add_argument("--ideallowpass",  type=float, metavar=("cutoff"),
-                        func=idealLowpass, action=OrderAction,
-                        help="Low pass: ideal(cutoff)")
+                        func=idealLowpass, action=OrderAction)
     parser.add_argument("--gaussian",      type=float, metavar=("cutoff"),
-                        func=gaussian,     action=OrderAction,
-                        help="Low pass: gaussian(cutoff)")
+                        func=gaussian,     action=OrderAction)
     parser.add_argument("--butterworth",   type=float, metavar=("cutoff", "n"), nargs=2,
-                        func=butterWorth,  action=OrderAction,
-                        help="Low pass: butterworth(cutoff, n)")
-    parser.add_argument("--unsharp",       type=float, metavar=("k", "gaussin cutoff"), nargs=2,
-                        func=unsharp,      action=OrderAction,
-                        help="High pass: (ori - gaussian(cutoff)) * k + ori")
+                        func=butterworth,  action=OrderAction)
+    parser.add_argument("--idealhighpass", type=float, metavar=("k", "cutoff"), nargs=2,
+                        func=idealHighpass,action=OrderAction)
+    parser.add_argument("--gaussianhigh",  type=float, metavar=("k", "cutoff"), nargs=2,
+                        func=gaussianHigh, action=OrderAction)
+    parser.add_argument("--unsharp",       type=float, metavar=("k", "gaussian cutoff"), nargs=2,
+                        func=unsharp,      action=OrderAction)
     parser.add_argument("--sobelh",        type=float, metavar=("k"),
-                        func=sobelH,       action=OrderAction,
-                        help="High pass: sobel horizontal * k + ori")
+                        func=sobelH,       action=OrderAction)
     parser.add_argument("--sobelv",        type=float, metavar=("k"),
-                        func=sobelV,       action=OrderAction,
-                        help="High pass: sobel vertical * k + ori")
-    parser.add_argument("--robera",        type=float, metavar=("k"),
-                        func=roberA,       action=OrderAction,
-                        help="High pass: Rober cross-gradient * k + ori")
-    parser.add_argument("--roberb",        type=float, metavar=("k"),
-                        func=roberB,       action=OrderAction,
-                        help="High pass: Rober cross-gradient * k + ori")
+                        func=sobelV,       action=OrderAction)
+    parser.add_argument("--roberx",        type=float, metavar=("k"),
+                        func=roberGx,      action=OrderAction)
+    parser.add_argument("--robery",        type=float, metavar=("k"),
+                        func=roberGy,      action=OrderAction)
     parser.add_argument("--laplacian4",    type=float, metavar=("k"),
-                        func=laplacian4,   action=OrderAction,
-                        help="High pass: Laplacian_4neightbor * k + ori")
+                        func=laplacian4,   action=OrderAction)
     parser.add_argument("--laplacian8",    type=float, metavar=("k"),
-                        func=laplacian8,   action=OrderAction,
-                        help="High pass: Laplacian_8neightbor * k + ori")
-    parser.add_argument("--boxfilter",     type=str, metavar=("123x123"),
-                        func=boxFilter,    action=OrderAction,
-                        help="High pass: Rober cross-gradient * k + ori")
-    parser.add_argument("--kernel",        type=str, metavar=("arr"),
-                        func=customKernal, action=OrderAction,
-                        help="Convolute with your custom array: e.g.  \"0 0 0;0 1 0; 0 0 0\" ")
-    parser.add_argument("--log",           type=float, metavar=("sigma", "threshold"), nargs=2,
-                        func=LoG,          action=OrderAction,
-                        help="Laplacian of Gaussian(Threshold = max * threshold)")
+                        func=laplacian8,   action=OrderAction)
+    parser.add_argument("--kernel",        type=str,   metavar=("arr"),
+                        func=customKernal, action=OrderAction)
+    parser.add_argument("--log",           type=float, metavar=("k", "sigma"), nargs=2,
+                        func=LoG,          action=OrderAction)
+    parser.add_argument("--butterworthhigh", type=float, metavar=("k", "cutoff", "n"), nargs=3,
+                        func=butterworthHighpass, action=OrderAction)
 
 
 if __name__ == "__main__":

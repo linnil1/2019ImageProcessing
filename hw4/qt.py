@@ -7,6 +7,7 @@ import numpy as np
 import hw1_np as hw1
 import hw2_np as hw2
 import hw3_np as hw3
+import hw4_np as hw4
 import utils
 
 
@@ -425,21 +426,23 @@ def alert(error):
 
 
 def test():
-    filename = "data/Image 3-4.jpg"
-    # filename = "data/stackoverflow.jpg"
+    filename = "data/C1HW04_IMG02_2019.bmp"
     img = hw2.readRGB(filename)
-    moduleAdd(*modules[1])
+    moduleAdd(modules[1][0], modules[1][1:])
     now_modules[0].img = img
     now_modules[0].update()
-    moduleAdd(*modules[9])
-    moduleAdd(*modules[-1])
+    moduleAdd(modules[9][0], modules[9][1:])
+    moduleAdd(modules[-4][0], modules[-4][1:])
+    moduleAdd(modules[-6][0], modules[-6][1:])
+    moduleAdd(modules[-3][0], modules[-3][1:])
 
 
 # Predefine modules
 modules = [
     # read image module
     (ImageReading, hw1.read64,           "64 formatted image (*.64)"),
-    (ImageReading, hw2.readRGB,          "JPG or BMP image (*.JPG *.JPEG *.jpg *.jpeg *.bmp)"),
+    (ImageReading, hw2.readRGB,          "JPG or BMP image"
+                                         "(*.JPG *.JPEG *.jpg *.jpeg *.bmp)"),
     # histogram module
     (ImageHistogram, hw1.getHist),
     # util module
@@ -455,7 +458,7 @@ modules = [
     (ImageSimple,  hw2.toGrayB),
     (ImageSpinbox, hw2.setThreshold,     [(int, (0, 255), 128)]),
     (ImageSimple,  hw2.histogramEqualize),
-    (ImageSpinbox, hw2.gammaCorrection,  [(float, (-100, 100), 1)]),
+    (ImageSpinbox, hw2.gammaCorrection,  [(float, (-10, 10), 1)]),
     (ImageText,    hw2.bilinear,         "600x400", ""),
     # hw3 module
     (ImageText,    hw3.medianFilter,     "3x3", ""),
@@ -464,19 +467,41 @@ modules = [
     (ImageText,    hw3.boxFilter,        "3x3", ""),
     (ImageSpinbox, hw3.idealLowpass,     [(float, (0, 1000), 20, "cutoff")]),
     (ImageSpinbox, hw3.gaussian,         [(float, (0, 1000), 20, "cutoff")]),
-    (ImageSpinbox, hw3.butterworth,      [(float, (1, 1000), 20, "cutoff"),
-                                          (float, (1, 1000), 1, "n")]),
-    (ImageSpinbox, hw3.unsharp,          [(float, (1, 1000), 2, "k"),
-                                          (float, (1, 1000), 20, "cutoff")]),
-    (ImageSpinbox, hw3.sobelH,           [(float, (1, 1000), 2)]),
-    (ImageSpinbox, hw3.sobelV,           [(float, (1, 1000), 2)]),
-    (ImageSpinbox, hw3.roberGx,          [(float, (1, 1000), 2)]),
-    (ImageSpinbox, hw3.roberGy,          [(float, (1, 1000), 2)]),
-    (ImageSpinbox, hw3.laplacian4,       [(float, (1, 1000), 2)]),
-    (ImageSpinbox, hw3.laplacian8,       [(float, (1, 1000), 2)]),
+    (ImageSpinbox, hw3.butterworth,      [(float, (0, 1000), 20, "cutoff"),
+                                          (float, (0, 1000), 1, "n")]),
+    (ImageSpinbox, hw3.unsharp,          [(float, (0, 1000), 2, "k"),
+                                          (float, (0, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw3.gaussianHigh,     [(float, (0, 1000), 2, "k"),
+                                          (float, (0, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw3.idealHighpass,    [(float, (0, 1000), 2, "k"),
+                                          (float, (0, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw3.butterworthHigh,  [(float, (0, 1000), 2, "k"),
+                                          (float, (0, 1000), 20, "cutoff"),
+                                          (float, (0, 1000), 1, "n")]),
+    (ImageSpinbox, hw3.sobelH,           [(float, (0, 1000), 2)]),
+    (ImageSpinbox, hw3.sobelV,           [(float, (0, 1000), 2)]),
+    (ImageSpinbox, hw3.roberGx,          [(float, (0, 1000), 2)]),
+    (ImageSpinbox, hw3.roberGy,          [(float, (0, 1000), 2)]),
+    (ImageSpinbox, hw3.laplacian4,       [(float, (0, 1000), 2)]),
+    (ImageSpinbox, hw3.laplacian8,       [(float, (0, 1000), 2)]),
     (ImageText,    hw3.customKernal,     "0 0 0; 0 1 0; 0 0 0"),
-    (ImageSpinbox, hw3.LoG,              [(float, (1, 1000), 2, "k"),
-                                          (float, (1, 100), 1, "sigma")]),
+    (ImageSpinbox, hw3.LoG,              [(float, (0, 1000), 2, "k"),
+                                          (float, (0, 1000), 1, "sigma")]),
+    # hw4 module
+    (ImageSpinbox, hw4.homomorphic,      [(float, (0, 1000), 0.7, "f_low"),
+                                          (float, (0, 1000), 1.3, "f_high"),
+                                          (float, (0, 1000), 20, "cutoff")]),
+    (ImageSpinbox, hw4.noiseGaussian,    [(int, (-255, 255), 0, "mean"),
+                                          (int, (-255, 255), 1, "std")]),
+    (ImageSpinbox, hw4.turbulenceBlur,   [(float, (0, 1000), 1, "k")]),
+    (ImageSpinbox, hw4.motionBlur,       [(float, (-10, 10), 0.01, "dx"),
+                                          (float, (-10, 10), 0.01, "dy")]),
+    (ImageSpinbox, hw4.motionInv,        [(float, (-10, 10), 0.01, "dx"),
+                                          (float, (-10, 10), 0.01, "dy")]),
+    (ImageSpinbox, hw4.motionWiener,     [(float, (0, 1000), 0.01, "k"),
+                                          (float, (-10, 10), 0.01, "dx"),
+                                          (float, (-10, 10), 0.01, "dy")]),
+    (ImageSimple,  hw4.getShowSpectrum),
 ]
 
 # setup and run

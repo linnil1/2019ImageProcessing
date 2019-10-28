@@ -260,48 +260,48 @@ def test():
 
 
 def parserAdd_hw3(parser):
-    parser.add_argument("--medianfilter",  type=str,   metavar=("aaaxbbb"),
-                        func=medianFilter, action=OrderAction)
-    parser.add_argument("--minfilter",     type=str,   metavar=("aaaxbbb"),
-                        func=minFilter,    action=OrderAction)
-    parser.add_argument("--maxfilter",     type=str,   metavar=("aaaxbbb"),
-                        func=maxFilter,    action=OrderAction)
-    parser.add_argument("--boxfilter",     type=str,   metavar=("123x123"),
-                        func=boxFilter,    action=OrderAction)
-    parser.add_argument("--ideallowpass",  type=float, metavar=("cutoff"),
-                        func=idealLowpass, action=OrderAction)
-    parser.add_argument("--gaussian",      type=float, metavar=("cutoff"),
-                        func=gaussian,     action=OrderAction)
-    parser.add_argument("--butterworth",   type=float, metavar=("cutoff", "n"), nargs=2,
-                        func=butterworth,  action=OrderAction)
-    parser.add_argument("--idealhighpass", type=float, metavar=("k", "cutoff"), nargs=2,
-                        func=idealHighpass,action=OrderAction)
-    parser.add_argument("--gaussianhigh",  type=float, metavar=("k", "cutoff"), nargs=2,
-                        func=gaussianHigh, action=OrderAction)
-    parser.add_argument("--unsharp",       type=float, metavar=("k", "gaussian cutoff"), nargs=2,
-                        func=unsharp,      action=OrderAction)
-    parser.add_argument("--sobelh",        type=float, metavar=("k"),
-                        func=sobelH,       action=OrderAction)
-    parser.add_argument("--sobelv",        type=float, metavar=("k"),
-                        func=sobelV,       action=OrderAction)
-    parser.add_argument("--roberx",        type=float, metavar=("k"),
-                        func=roberGx,      action=OrderAction)
-    parser.add_argument("--robery",        type=float, metavar=("k"),
-                        func=roberGy,      action=OrderAction)
-    parser.add_argument("--laplacian4",    type=float, metavar=("k"),
-                        func=laplacian4,   action=OrderAction)
-    parser.add_argument("--laplacian8",    type=float, metavar=("k"),
-                        func=laplacian8,   action=OrderAction)
-    parser.add_argument("--kernel",        type=str,   metavar=("arr"),
-                        func=customKernal, action=OrderAction)
-    parser.add_argument("--log",           type=float, metavar=("k", "sigma"), nargs=2,
-                        func=LoG,          action=OrderAction)
+    parser.add_argument("--medianfilter",    type=str,   metavar=("aaaxbbb"),
+                        func=medianFilter,   action=OrderAction)
+    parser.add_argument("--minfilter",       type=str,   metavar=("aaaxbbb"),
+                        func=minFilter,      action=OrderAction)
+    parser.add_argument("--maxfilter",       type=str,   metavar=("aaaxbbb"),
+                        func=maxFilter,      action=OrderAction)
+    parser.add_argument("--boxfilter",       type=str,   metavar=("123x123"),
+                        func=boxFilter,      action=OrderAction)
+    parser.add_argument("--ideallowpass",    type=float, metavar=("cutoff"),
+                        func=idealLowpass,   action=OrderAction)
+    parser.add_argument("--gaussian",        type=float, metavar=("cutoff"),
+                        func=gaussian,       action=OrderAction)
+    parser.add_argument("--butterworth",     type=float, metavar=("cutoff", "n"), nargs=2,
+                        func=butterworth,    action=OrderAction)
+    parser.add_argument("--idealhighpass",   type=float, metavar=("k", "cutoff"), nargs=2,
+                        func=idealHighpass,  action=OrderAction)
+    parser.add_argument("--gaussianhigh",    type=float, metavar=("k", "cutoff"), nargs=2,
+                        func=gaussianHigh,   action=OrderAction)
     parser.add_argument("--butterworthhigh", type=float, metavar=("k", "cutoff", "n"), nargs=3,
-                        func=butterworthHighpass, action=OrderAction)
+                        func=butterworthHigh,action=OrderAction)
+    parser.add_argument("--unsharp",         type=float, metavar=("k", "gaussian cutoff"), nargs=2,
+                        func=unsharp,        action=OrderAction)
+    parser.add_argument("--sobelh",          type=float, metavar=("k"),
+                        func=sobelH,         action=OrderAction)
+    parser.add_argument("--sobelv",          type=float, metavar=("k"),
+                        func=sobelV,         action=OrderAction)
+    parser.add_argument("--roberx",          type=float, metavar=("k"),
+                        func=roberGx,        action=OrderAction)
+    parser.add_argument("--robery",          type=float, metavar=("k"),
+                        func=roberGy,        action=OrderAction)
+    parser.add_argument("--laplacian4",      type=float, metavar=("k"),
+                        func=laplacian4,     action=OrderAction)
+    parser.add_argument("--laplacian8",      type=float, metavar=("k"),
+                        func=laplacian8,     action=OrderAction)
+    parser.add_argument("--kernel",          type=str,   metavar=("arr"),
+                        func=customKernal,   action=OrderAction)
+    parser.add_argument("--log",             type=float, metavar=("k", "sigma"), nargs=2,
+                        func=LoG,            action=OrderAction)
 
 
 if __name__ == "__main__":
-    # test()
+    test()
     parser = argparse.ArgumentParser(description="HW3")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)

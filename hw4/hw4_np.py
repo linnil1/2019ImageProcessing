@@ -49,7 +49,7 @@ def wienerFilter(img, k, formula):
 @hw1.limitImg
 def noiseGaussian(img, mean, sig):
     """ Add noise: gaussian """
-    return img + np.random.normal(mean, sig, img.shape)
+    return img + np.random.normal(mean / 255, sig / 255, img.shape)
 
 
 @utils.normalizeWrap

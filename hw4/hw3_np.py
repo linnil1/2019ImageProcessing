@@ -76,7 +76,7 @@ def wrapHighboostFilter(func):
     The custom function will return the convolution of img and it's kernel
     """
     @wraps(func)
-    @hw1.limitImg
+    @utils.normalizeWrap
     def wrapFunc(img, k=0, *args, needabs=False, **kwagrs):
         res = func(img, *args, **kwagrs)
         if needabs:
@@ -150,10 +150,10 @@ def boxFilter(img, size):
     return spatialConv(img, krn)
 
 
-def feqOperation(img, func):
+def feqOperationXY(img, func):
     """
     Filtering the map by func in frequency domain.
-    The input of func is a distance to center
+    The input of func is X and Y.
     """
     # fft
     trans_img = img.copy()
@@ -165,7 +165,7 @@ def feqOperation(img, func):
     s = img.shape
     j, i = np.meshgrid(np.arange(s[1]) - s[1] // 2,
                        np.arange(s[0]) - s[0] // 2)
-    filter_feq = func(j ** 2 + i ** 2)
+    filter_feq = func(i, j)
 
     # inverse
     filter_img = np.fft.ifft2(filter_feq * feq)
@@ -175,48 +175,58 @@ def feqOperation(img, func):
     return result_sp
 
 
+def feqOperation(img, func):
+    """
+    Filtering the map by func in frequency domain.
+    The input of func is a distance to center
+    """
+    def distfilter(i, j):
+        return func(i ** 2 + j ** 2)
+    return feqOperationXY(img, distfilter)
+
+
 def gaussian(img, sig):
     """ Low Pass: Gaussian """
-    def gaussianFilter(dest):
-        return np.exp(-dest / sig ** 2)
+    def gaussianFilter(dist):
+        return np.exp(-dist / sig ** 2)
     return feqOperation(img, gaussianFilter)
 
 
 def idealLowpass(img, cutoff):
     """ Low Pass: Ideal """
-    def idealFilter(dest):
-        return dest < cutoff ** 2
+    def idealFilter(dist):
+        return dist < cutoff ** 2
     return feqOperation(img, idealFilter)
 
 
 def butterworth(img, cutoff, n):
     """ Low Pass: ButterWorth """
-    def butterworthFilter(dest):
-        return 1 / (1 + dest / (cutoff ** 2)) ** n
+    def butterworthFilter(dist):
+        return 1 / (1 + dist / (cutoff ** 2)) ** n
     return feqOperation(img, butterworthFilter)
 
 
 @wrapHighboostFilter
 def gaussianHigh(img, sig):
     """ High Pass: Gaussian with Highboost(k) """
-    def gaussianFilter(dest):
-        return 1 - np.exp(-dest / sig ** 2)
+    def gaussianFilter(dist):
+        return 1 - np.exp(-dist / sig ** 2)
     return feqOperation(img, gaussianFilter)
 
 
 @wrapHighboostFilter
 def idealHighpass(img, cutoff):
     """ High Pass: Ideal with Highboost(k) """
-    def idealFilter(dest):
-        return dest > cutoff ** 2
+    def idealFilter(dist):
+        return dist > cutoff ** 2
     return feqOperation(img, idealFilter)
 
 
 @wrapHighboostFilter
-def butterworthHighpass(img, cutoff, n):
+def butterworthHigh(img, cutoff, n):
     """ High Pass: ButterWorth with Highboost(k) """
-    def butterworthFilter(dest):
-        return 1 - 1 / (1 + dest / (cutoff ** 2)) ** n
+    def butterworthFilter(dist):
+        return 1 - 1 / (1 + dist / (cutoff ** 2)) ** n
     return feqOperation(img, butterworthFilter)
 
 
@@ -242,7 +252,7 @@ def test():
     plt.subplot(1, 2, 1)
     plt.imshow(gray_image, cmap="gray")
     plt.subplot(1, 2, 2)
-    plt.imshow(gaussianHighpass(gray_image, 1, 150), cmap="gray")
+    plt.imshow(gaussianHigh(gray_image, 1, 150), cmap="gray")
     plt.show()
     # import timeit
     # print(timeit.timeit(lambda: spatialConv(gray_image, kernel), number=10))

@@ -17,46 +17,149 @@ from utils import OrderAction
 from functools import wraps
 
 
+eps = 1e-6
+
+
 def homomorphic(img, f_low, f_high, cutoff, c=1):
     """ Homomorphic Filter """
-    def homoFilter(dest):
-        return f_low + (f_high - f_low) * (1 - np.exp(-c * dest / cutoff ** 2))
+    def homoFilter(dist):
+        return f_low + (f_high - f_low) * (1 - np.exp(-c * dist / cutoff ** 2))
     return np.exp(hw3.feqOperation(np.log(img + 1), homoFilter) - 1)
 
 
+@utils.normalizeWrap
+def invFilter(img, formula):
+    """ Reconstruction by genernal inverse filter """
+    def filterInv(i, j):
+        filter_feq = formula(i, j)
+        filter_feq[np.abs(filter_feq) < eps] = np.inf
+        return filter_feq ** -1
+    return hw3.feqOperationXY(img, filterInv)
+
+
+@utils.normalizeWrap
+def wienerFilter(img, k, formula):
+    """ Degradation by Motion  """
+    def wiener(i, j):
+        feq = formula(i, j)
+        return feq.conj() / (np.abs(feq) ** 2 + k)
+    return hw3.feqOperationXY(img, wiener)
+
+
+@hw1.limitImg
+def noiseGaussian(img, mean, sig):
+    """ Add noise: gaussian """
+    return img + np.random.normal(mean, sig, img.shape)
+
+
+@utils.normalizeWrap
+def turbulenceBlur(img, k):
+    """ Degradation by turbulence """
+    def turbulenceFilter(dist):
+        return np.exp(-k * dist ** (5 / 6))
+    return hw3.feqOperation(img, turbulenceFilter)
+
+
+# Four belows functions are motion blur related
+def motionFilter(dx, dy):
+    """ A motion blur formula """
+    def f(i, j):
+        uv = (dx * j + dy * i) * np.pi
+        filter_feq = np.sin(uv) * np.exp(-1j * uv) / uv
+        filter_feq[np.abs(uv) < eps] = 0
+        return filter_feq
+    return f
+
+
+@utils.normalizeWrap
+def motionBlur(img, dx, dy):
+    """ Degradation by Motion  """
+    return hw3.feqOperationXY(img, motionFilter(dx, dy))
+
+
+def motionInv(img, dx, dy):
+    """ Reconstruction Motion by Inverse """
+    return invFilter(img, motionFilter(dx, dy))
+
+
+def motionWiener(img, k, dx, dy):
+    """ Reconstruction Motion by Wiener """
+    return wienerFilter(img, k, motionFilter(dx, dy))
+
+
+@utils.normalizeWrap
+def getShowSpectrum(img):
+    """ Get spectrum of img """
+    img[0::2, 1::2] *= -1
+    img[1::2, 0::2] *= -1
+    fft_image = np.fft.fft2(img)
+    return np.log(np.abs(fft_image) + 1)
+
+
+def showSpectrum(img):
+    """ Show spectrum of img """
+    plt.figure()
+    plt.imshow(getShowSpectrum(img), cmap="gray")
+
+
 def parserAdd_hw4(parser):
-    parser.add_argument("--homomorphic",  type=float,
-                        metavar=("f_low", "f_high", "cutoff"), nargs=3,
-                        func=homomorphic, action=OrderAction)
+    parser.add_argument("--homomorphic",     type=float, metavar=("f_low", "f_high", "cutoff"), nargs=3,
+                        func=homomorphic,    action=OrderAction)
+    parser.add_argument("--gaussiannoise",   type=float, metavar=("mean", "std"), nargs=2,
+                        func=noiseGaussian,  action=OrderAction)
+    parser.add_argument("--turbulenceblur",  type=float, metavar=("k"),
+                        func=turbulenceBlur, action=OrderAction)
+    parser.add_argument("--motionblur",      type=float, metavar=("dx", "dy"), nargs=2,
+                        func=motionBlur,     action=OrderAction)
+    parser.add_argument("--motioninv",       type=float, metavar=("dx", "dy"), nargs=2,
+                        func=motionInv,      action=OrderAction)
+    parser.add_argument("--motionwiener",    type=float, metavar=("k", "dx", "dy"), nargs=3,
+                        func=motionWiener,   action=OrderAction)
+    parser.add_argument("--showspectrum",    layer=(1, None), nargs=0,
+                        func=showSpectrum,   action=OrderAction)
 
 
 def test():
     # read
-    real_image = hw2.readRGB("../hw3/data/Image 3-3.jpg")
+    # real_image = hw2.readRGB("../hw3/data/Image 3-3.jpg")
+    # real_image = hw2.readRGB("../hw2/data/kemono_friends.jpg")
+    real_image = hw2.readRGB("data/C1HW04_IMG02_2019.bmp")
     gray_image = hw2.toGrayA(real_image)
 
-    plt.figure(figsize=(10, 10))
-    plt.subplot(1, 3, 1)
-    plt.title("Original")
-    plt.imshow(gray_image, cmap="gray")
+    std = 20
+    blur_img = motionBlur(gray_image, .1, .1)
+    noise_img = noiseGaussian(blur_img, 0, std / 255)
+    back_img = motionBlurInv(noise_img, .1, .1)
+    k = 0.001
+    wiener_img = motionBlurWiener(noise_img, k, .1, .1)
 
-    fft_image = np.fft.fft2(gray_image)
-    back_image = np.real(np.fft.ifft2(fft_image))
+    plt.figure(figsize=(12, 6))
+    plt.subplot(2, 4, 1)
+    # plt.title("Original")
+    # plt.imshow(gray_image, cmap="gray")
+    plt.title(f"Motion Degradation With noise std={std}")
+    plt.imshow(noise_img, cmap="gray")
 
-    plt.subplot(1, 3, 2)
-    plt.title(f"fft -> ifft")
-    plt.imshow(back_image, cmap="gray")
+    plt.subplot(2, 4, 2)
+    plt.title("Inverse Filter")
+    plt.imshow(back_img, cmap="gray")
 
-    plt.subplot(1, 3, 3)
-    plt.title(f"Difference")
-    plt.imshow(gray_image - back_image, cmap="gray")
+    plt.subplot(2, 4, 3)
+    plt.title(f"Wiener Filter k={k}")
+    plt.imshow(wiener_img, cmap="gray")
+
+    plt.subplot(2, 4, 4)
+    k = 0.01
+    wiener_img = motionBlurWiener(noise_img, k, .1, .1)
+    plt.title(f"Wiener Filter k={k}")
+    plt.imshow(wiener_img, cmap="gray")
 
     plt.show()
     exit()
 
 
 if __name__ == "__main__":
-    test()
+    # test()
     parser = argparse.ArgumentParser(description="HW4")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)

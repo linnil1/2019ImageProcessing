@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import argparse
 import copy
 import re
+from functools import wraps
 
 
 class Command():
@@ -53,6 +54,49 @@ def getDoc(func):
     if not func.__doc__:
         return ""
     return func.__doc__.split(".")[0].strip()
+
+
+def orderRun(parser):
+    """
+    Run the command with specific order
+    """
+    # read parameter
+    args = parser.parse_args()
+    if "order_command" not in args:
+        parser.print_help()
+        return
+    print(args.order_command)
+
+    # start postfix
+    stack = []
+    for command in args.order_command:
+        # postfix
+        if command.prev > len(stack):
+            raise argparse.ArgumentTypeError(
+                    f"Add more image before {command.dest} operation")
+        if command.prev:
+            imgs = stack[-command.prev:]
+        else:
+            imgs = []
+        now_img = command.run(imgs)
+
+        # remove previous and create new one
+        if command.output == 0:
+            stack = stack[:-command.prev]
+            stack.append(now_img)
+        # create new one
+        elif command.output == 1:
+            stack.append(now_img)
+        # pop
+        elif command.output == -1:
+            stack = stack[:-command.prev]
+        # no effect
+        elif command.output is None:
+            pass
+        else:  # TODO
+            pass
+
+    plt.show()
 
 
 def parserAdd_general(parser):
@@ -126,44 +170,14 @@ def parseSize(res):
     return np.array(res.split('x'), dtype=np.int)
 
 
-def orderRun(parser):
-    """
-    Run the command with specific order
-    """
-    # read parameter
-    args = parser.parse_args()
-    if "order_command" not in args:
-        parser.print_help()
-        return
-    print(args.order_command)
+def normalize(img):
+    """ Contrain image value from 0 to 1 """
+    return (img - img.min()) / (img.max() - img.min())
 
-    # start postfix
-    stack = []
-    for command in args.order_command:
-        # postfix
-        if command.prev > len(stack):
-            raise argparse.ArgumentTypeError(
-                    f"Add more image before {command.dest} operation")
-        if command.prev:
-            imgs = stack[-command.prev:]
-        else:
-            imgs = []
-        now_img = command.run(imgs)
 
-        # remove previous and create new one
-        if command.output == 0:
-            stack = stack[:-command.prev]
-            stack.append(now_img)
-        # create new one
-        elif command.output == 1:
-            stack.append(now_img)
-        # pop
-        elif command.output == -1:
-            stack = stack[:-command.prev]
-        # no effect
-        elif command.output is None:
-            pass
-        else:  # TODO
-            pass
-
-    plt.show()
+def normalizeWrap(func):
+    """ Wrap the normalize as decoder """
+    @wraps(func)
+    def wrapFunc(*args, **kwargs):
+        return normalize(func(*args, **kwargs))
+    return wrapFunc

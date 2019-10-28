@@ -30,8 +30,10 @@ class OrderAction(argparse.Action):
     """
     def __init__(self, option_strings, dest, layer=(1, 0), func=None, **kwargs):
         self.command = Command(func, dest, layer)
-        if not kwargs.get("help") and func.__doc__:
+        if not kwargs.get("help"):
             kwargs["help"] = getDoc(func)
+        if kwargs.get("nargs") is None:
+            kwargs["nargs"] = 1
         super(OrderAction, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -45,6 +47,11 @@ class OrderAction(argparse.Action):
 
 
 def getDoc(func):
+    """
+    Get description of the function
+    """
+    if not func.__doc__:
+        return ""
     return func.__doc__.split(".")[0].strip()
 
 

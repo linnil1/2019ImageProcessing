@@ -126,7 +126,7 @@ def test():
 
 def parserAdd_hw2(parser):
     parser.add_argument("--read",      type=str,        metavar=("ImageFilePath"),
-                        func=readRGB,   layer=(0, 1),   action=OrderAction)
+                        func=readRGB,  layer=(0, 1),    action=OrderAction)
     parser.add_argument("--graya",     nargs=0,
                         func=toGrayA,                   action=OrderAction)
     parser.add_argument("--grayb",     nargs=0,

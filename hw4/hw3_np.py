@@ -143,7 +143,7 @@ def customKernal(img, txt):
 
 
 def boxFilter(img, size):
-    """ Order Filter: Mean """
+    """ Ordered Filter: Mean """
     if type(size) is str:
         size = utils.parseSize(size)
     krn = np.ones(size, dtype=np.float) / size[0] / size[1]

@@ -3,7 +3,10 @@ Author: linnil1
 Objective: Image Processing HW4
 Description: Some operations are implemented in the file
 * Homomorphic filter
+* gaussian noise
 * Wiener filter
+* Inverse filter
+* Blur: motion and turbulence
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -52,6 +55,12 @@ def noiseGaussian(img, mean, sig):
     return img + np.random.normal(mean / 255, sig / 255, img.shape)
 
 
+@hw1.limitImg
+def noiseUniform(img, width):
+    """ Add noise: uniform """
+    return img + np.random.normal(-width / 2 / 255, width / 2 / 255, img.shape)
+
+
 @utils.normalizeWrap
 def turbulenceBlur(img, k):
     """ Degradation by turbulence """
@@ -89,7 +98,7 @@ def motionWiener(img, k, dx, dy):
 
 @utils.normalizeWrap
 def getShowSpectrum(img):
-    """ Get spectrum of img """
+    """ Spectrum of image """
     img[0::2, 1::2] *= -1
     img[1::2, 0::2] *= -1
     fft_image = np.fft.fft2(img)
@@ -97,7 +106,7 @@ def getShowSpectrum(img):
 
 
 def showSpectrum(img):
-    """ Show spectrum of img """
+    """ Spectrum of image """
     plt.figure()
     plt.imshow(getShowSpectrum(img), cmap="gray")
 
@@ -107,6 +116,8 @@ def parserAdd_hw4(parser):
                         func=homomorphic,    action=OrderAction)
     parser.add_argument("--gaussiannoise",   type=float, metavar=("mean", "std"), nargs=2,
                         func=noiseGaussian,  action=OrderAction)
+    parser.add_argument("--uniformnoise",    type=float, metavar=("width"),
+                        func=noiseUniform,   action=OrderAction)
     parser.add_argument("--turbulenceblur",  type=float, metavar=("k"),
                         func=turbulenceBlur, action=OrderAction)
     parser.add_argument("--motionblur",      type=float, metavar=("dx", "dy"), nargs=2,
@@ -127,33 +138,17 @@ def test():
     gray_image = hw2.toGrayA(real_image)
 
     std = 20
-    blur_img = motionBlur(gray_image, .1, .1)
-    noise_img = noiseGaussian(blur_img, 0, std / 255)
-    back_img = motionBlurInv(noise_img, .1, .1)
-    k = 0.001
-    wiener_img = motionBlurWiener(noise_img, k, .1, .1)
+    # blur_img = motionBlur(gray_image, .1, .1)
+    # noise_img = noiseGaussian(blur_img, 0, std / 255)
+    noise_img = noiseUniform(gray_image, 100)
 
-    plt.figure(figsize=(12, 6))
-    plt.subplot(2, 4, 1)
-    # plt.title("Original")
-    # plt.imshow(gray_image, cmap="gray")
-    plt.title(f"Motion Degradation With noise std={std}")
-    plt.imshow(noise_img, cmap="gray")
-
-    plt.subplot(2, 4, 2)
-    plt.title("Inverse Filter")
-    plt.imshow(back_img, cmap="gray")
-
-    plt.subplot(2, 4, 3)
-    plt.title(f"Wiener Filter k={k}")
-    plt.imshow(wiener_img, cmap="gray")
-
-    plt.subplot(2, 4, 4)
-    k = 0.01
-    wiener_img = motionBlurWiener(noise_img, k, .1, .1)
-    plt.title(f"Wiener Filter k={k}")
-    plt.imshow(wiener_img, cmap="gray")
-
+    plt.figure(figsize=(6, 12))
+    plt.subplot(2, 1, 1)
+    plt.title("Original Image Histogram")
+    plt.hist(gray_image)
+    plt.subplot(2, 1, 2)
+    plt.title("Noised Image Histogram")
+    plt.hist(noise_img)
     plt.show()
     exit()
 

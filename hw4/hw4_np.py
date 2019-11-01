@@ -23,6 +23,7 @@ from functools import wraps
 eps = 1e-6
 
 
+@hw1.limitImg
 def homomorphic(img, f_low, f_high, cutoff, c=1):
     """ Homomorphic Filter """
     def homoFilter(dist):
@@ -61,7 +62,7 @@ def noiseUniform(img, width):
     return img + np.random.normal(-width / 2 / 255, width / 2 / 255, img.shape)
 
 
-@utils.normalizeWrap
+@hw1.limitImg
 def turbulenceBlur(img, k):
     """ Degradation by turbulence """
     def turbulenceFilter(dist):
@@ -80,7 +81,7 @@ def motionFilter(dx, dy):
     return f
 
 
-@utils.normalizeWrap
+@hw1.limitImg
 def motionBlur(img, dx, dy):
     """ Degradation by Motion  """
     return hw3.feqOperationXY(img, motionFilter(dx, dy))
@@ -99,6 +100,9 @@ def motionWiener(img, k, dx, dy):
 @utils.normalizeWrap
 def getShowSpectrum(img):
     """ Spectrum of image """
+    if len(img.shape) == 3:
+        raise ValueError("The image should be in gray scale")
+    img = img.copy()
     img[0::2, 1::2] *= -1
     img[1::2, 0::2] *= -1
     fft_image = np.fft.fft2(img)

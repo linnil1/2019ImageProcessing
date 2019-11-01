@@ -89,6 +89,9 @@ We can conclude some concepts:
 I apply uniform noise on book image. We can find the histogram after applying noise become flatter and more even than untreated image. 
 ![](https://i.imgur.com/sGOFzX7.png)
 
+And I found that we should set image to even size before applying FFT.
+![](https://i.imgur.com/ifIdkxV.png)
+
 
 ## Program usage
 ### Install on local machine

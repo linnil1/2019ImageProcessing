@@ -26,6 +26,8 @@ def wrapImgWithPad(func):
     """
     @wraps(func)
     def wrapFunc(img, size):
+        if len(img.shape) == 3:
+            raise ValueError("The image should be in gray scale")
         if type(size) is str:
             size = utils.parseSize(size)
         t, l = size // 2
@@ -55,6 +57,8 @@ def maxFilter(*args, **kwargs):
 
 def spatialConv(img, krn):
     """ Convolute the input image and kernel """
+    if len(img.shape) == 3:
+        raise ValueError("The image should be in gray scale")
     # padding
     size_img = np.array(img.shape)
     size_krn = np.array(krn.shape)
@@ -76,7 +80,7 @@ def wrapHighboostFilter(func):
     The custom function will return the convolution of img and it's kernel
     """
     @wraps(func)
-    @utils.normalizeWrap
+    @hw1.limitImg
     def wrapFunc(img, k=0, *args, needabs=False, **kwagrs):
         res = func(img, *args, **kwagrs)
         if needabs:
@@ -185,6 +189,7 @@ def feqOperation(img, func):
     return feqOperationXY(img, distfilter)
 
 
+@hw1.limitImg
 def gaussian(img, sig):
     """ Low Pass: Gaussian """
     def gaussianFilter(dist):
@@ -192,6 +197,7 @@ def gaussian(img, sig):
     return feqOperation(img, gaussianFilter)
 
 
+@hw1.limitImg
 def idealLowpass(img, cutoff):
     """ Low Pass: Ideal """
     def idealFilter(dist):
@@ -199,6 +205,7 @@ def idealLowpass(img, cutoff):
     return feqOperation(img, idealFilter)
 
 
+@hw1.limitImg
 def butterworth(img, cutoff, n):
     """ Low Pass: ButterWorth """
     def butterworthFilter(dist):
@@ -301,7 +308,7 @@ def parserAdd_hw3(parser):
 
 
 if __name__ == "__main__":
-    test()
+    # test()
     parser = argparse.ArgumentParser(description="HW3")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)

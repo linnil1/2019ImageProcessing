@@ -70,8 +70,8 @@ def linear(q, v1, v2):
 
 def bilinear(img, new_shape):
     """ Resize by bilinear interpolation """
-    if new_shape is str:
-        new_shape = utils.parseSize(res)
+    if type(new_shape) is str:
+        new_shape = utils.parseSize(new_shape)
     # prepare data
     print(f"{img.shape} -> {new_shape}")
     if len(img.shape) == 2:

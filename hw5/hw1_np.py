@@ -61,6 +61,15 @@ def parserAdd_hw1(parser):
     parser.add_argument("--special",    nargs=0,      metavar=(""),
                         func=image_special_func,      action=OrderAction)
 
+def limitImg01(img):
+    """
+    Limit the image value from 0 to 1.
+    """
+    img[img > 1] = 1
+    img[img < 0] = 0
+    return img
+
+
 
 def limitImg(func):
     """
@@ -69,10 +78,7 @@ def limitImg(func):
     """
     @wraps(func)
     def wrapFunc(*args, **kwargs):
-        img = func(*args, **kwargs)
-        img[img > 1] = 1
-        img[img < 0] = 0
-        return img
+        return limitImg01(func(*args, **kwargs))
     return wrapFunc
 
 

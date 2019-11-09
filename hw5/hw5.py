@@ -25,9 +25,11 @@ class Color(Enum):
     HSI = "HSI"
     XYZ = "XYZ"
     LAB = "LAB"
+    YUV = "YUV"
 
 
-# Textbook: Gonzalez, R. C., & Woods, R. E. (2017). Digital image processing, 4th edn. ISBN: 9780133356724.
+# Textbook: Gonzalez, R. C., & Woods, R. E. (2017).
+#           Digital image processing, 4th edn. ISBN: 9780133356724.
 def fromRGB(img, space):
     """ From RGB to other space """
     if space == Color.RGB:
@@ -42,14 +44,14 @@ def fromRGB(img, space):
         # Textbook
         cmy = fromRGB(img, Color.CMY)
         k = np.min(cmy, axis=2, keepdims=True)
-        return np.concatenate([(cmy - k) /  (1 - k), k], axis=2)
+        return np.concatenate([(cmy - k) / (1 - k), k], axis=2)
 
     elif space == Color.HSI:
         # Textbook
         i = np.mean(img, axis=2)
         s = 1 - np.min(img, axis=2) / (i + 1e-6)
         s[s < 0] = 0
-        R, G, B = img[:,:,0], img[:,:,1], img[:,:,2]
+        R, G, B = img[:, :, 0], img[:, :, 1], img[:, :, 2]
         th = np.arccos((2 * R - G - B) / 2 / (
              np.sqrt((R - G) ** 2 + (R - B) * (G - B)) + 1e-6))
         h = th
@@ -67,21 +69,26 @@ def fromRGB(img, space):
                 0.019334  0.119193  0.950227"""))
         return img.dot(m.T)
 
-
     elif space == Color.LAB:
         # textbook, wiki:CIELAB_color_space
         XYZ_ref = np.array([95.0489, 100, 108.8840])
-        XYZ = fromRGB(Color.XYZ) / XYZ_ref
-        XYZ_f = np.zeros(XYZ.shape)
-        i = XYZ > 0.008856
-        XYZ_f[i] = XYZ[i] ** (1 / 3)
-        XYZ_f[~i] = 7.787 * XYZ[~i] + 16 / 116
-
-        L = 116 * XYZ_f[:, :, 0] - 16
+        XYZ_f = fromRGB(img, Color.XYZ) / XYZ_ref
+        d = 6 / 29
+        i = XYZ_f > d ** 3
+        XYZ_f[i] = XYZ_f[i] ** (1 / 3)
+        XYZ_f[~i] = XYZ_f[~i] / (3 * d ** 2) + 4 / 29
+        L = 116 * XYZ_f[:, :, 1] - 16
         a = 500 * (XYZ_f[:, :, 0] - XYZ_f[:, :, 1])
         b = 200 * (XYZ_f[:, :, 1] - XYZ_f[:, :, 2])
         return np.stack([L, a, b], axis=2)
 
+    elif space == Color.YUV:
+        # https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
+        m = np.array(np.matrix("""
+                0.299 0.587 0.114;
+                -0.14713 -0.28886 0.436;
+                0.615 -0.51499 -0.10001"""))
+        return img.dot(m.T)
 
     else:
         raise ValueError("No such format {space}")
@@ -142,6 +149,27 @@ def toRGB(img, space):
                  0.055648 -0.204043  1.057311"""))
         return img.dot(m.T)
 
+    elif space == Color.LAB:
+        # textbook, wiki:CIELAB_color_space
+        XYZ_ref = np.array([95.0489, 100, 108.8840])
+        XYZ_inv = np.zeros(img.shape)
+        XYZ_inv[:, :, 0] += img[:, :, 1] / 500
+        XYZ_inv[:, :, :] += ((img[:, :, 0] + 16) / 116)[:, :, None]
+        XYZ_inv[:, :, 2] -= img[:, :, 2] / 200
+        d = 6 / 29
+        i = XYZ_inv > d
+        XYZ_inv[i] = XYZ_inv[i] ** 3
+        XYZ_inv[~i] = 3 * d ** 2 * (XYZ_inv[~i] - 4 / 29)
+        return toRGB(XYZ_inv * XYZ_ref, Color.XYZ)
+
+    elif space == Color.YUV:
+        # https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
+        m = np.array(np.matrix("""
+                1 0 1.13983;
+                1 -0.39465 -0.58060;
+                1 2.03211 0"""))
+        return img.dot(m.T)
+
     else:
         raise ValueError("No such format {space}")
 
@@ -153,16 +181,49 @@ def colorTransform(img, space1, space2):
     return fromRGB(img_rgb, space2)
 
 
+def testTransform():
+    img = hw2.readRGB("../hw2/data/kemono_friends.jpg")
+    for c in list(Color):
+        if c == Color.RGB:
+            continue
+        trans_img = fromRGB(img, c)
+        n = 2 + trans_img.shape[2]
+
+        plt.figure(figsize=(18, 6))
+        plt.subplot(1, n, 1)
+        plt.title("Original Image")
+        plt.imshow(img)
+
+        for i in range(trans_img.shape[2]):
+            plt.subplot(1, n, 2 + i)
+            plt.title(c.value[i])
+            plt.imshow(trans_img[:, :, i], cmap="gray")
+
+        plt.subplot(1, n, n)
+        plt.title("Restore Image")
+        back_img = hw1.limitImg01(toRGB(trans_img, c))
+        plt.imshow(back_img)
+
+        # plt.show()
+        print(c.value)
+        plt.savefig("data/img_" + c.value + ".png")
+        plt.clf()
+        # break
+    exit()
+
+
 def test():
     # read
     # real_image = hw2.readRGB("../hw3/data/Image 3-3.jpg")
     img = hw2.readRGB("../hw2/data/kemono_friends.jpg")
-    new_img = colorTransform(img, Color.RGB, Color.XYZ)
+    new_img = colorTransform(img, Color.RGB, Color.YUV)
     # new_img[:,:,2] -= .2
     print(img[:5, :5])
     print(new_img[:5, :5])
     print(new_img.shape)
-    new_img = colorTransform(new_img, Color.XYZ, Color.RGB)
+    new_img = colorTransform(new_img, Color.YUV, Color.RGB)
+    new_img = hw1.limitImg01(new_img)
+    print(new_img[:5, :5])
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.title("Original")
@@ -175,7 +236,8 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
+    testTransform()
+    # test()
     parser = argparse.ArgumentParser(description="HW4")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)

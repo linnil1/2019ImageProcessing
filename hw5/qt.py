@@ -8,6 +8,7 @@ import hw1_np as hw1
 import hw2_np as hw2
 import hw3_np as hw3
 import hw4_np as hw4
+import hw5_np as hw5
 import utils
 
 
@@ -92,7 +93,7 @@ class CommadWidget():
 
     def setParent(self):
         """
-        Update parents (also it's childrens) when something changed
+        Update it's parents settings
         """
         # remove old
         for p in self.parents:
@@ -330,6 +331,64 @@ class ImageHistogram(CommadWidget):
         self.widget.setFixedSize(*default_size)
 
 
+class ImageMenu(ImageWidget):
+    """
+    Dropdown Widget: Allow multiple meuns
+    """
+    def __init__(self, func, menus, *args):
+        super().__init__(func, *args)
+        layout = QBoxLayout(QBoxLayout.LeftToRight)
+        self.menu_dropdowns = []
+        for i, menu in enumerate(menus):
+            dropdown = QComboBox()
+            for m in menu[0]:
+                dropdown.addItem(str(m), m)
+            dropdown.setCurrentText(str(menu[0]))
+            dropdown.currentIndexChanged.connect(self.update)
+            self.menu_dropdowns.append(dropdown)
+            layout.addWidget(QLabel(menu[1]))
+            layout.addWidget(dropdown)
+        self.layout.addLayout(layout)
+
+    def updateThis(self):
+        selected = []
+        for dropdown in self.menu_dropdowns:
+            selected.append(dropdown.itemData(dropdown.currentIndex()))
+        self.img = self.func(*self.getParentImg(), *selected)
+
+
+class ImageColorbar(ImageWidget):
+    """
+    Choosing two points and make color bar
+    """
+    def __init__(self, func):
+        super().__init__(func, n_parent=0)
+        self.colors = ["000000", "ffffff"]
+        layout = QBoxLayout(QBoxLayout.LeftToRight)
+
+        button = QPushButton("Select Start Color")
+        button.clicked.connect(self.getColor(0))
+        layout.addWidget(button)
+        button = QPushButton("Select End Color")
+        button.clicked.connect(self.getColor(1))
+        layout.addWidget(button)
+
+        self.layout.addLayout(layout)
+
+    def getColor(self, i):
+        def wrap():
+            color = QColorDialog.getColor()
+            if color.isValid():
+                self.colors[i] = color.name()[1:]
+                self.update()
+        return wrap
+
+    def updateThis(self):
+        print(self.colors)
+        self.img = self.func(*self.colors)
+        self.img = np.transpose(np.tile(self.img, [10, 1, 1]), (1, 0, 2))
+
+
 # Functions for existing modules list
 def layoutRemoveAll():
     """
@@ -426,15 +485,15 @@ def alert(error):
 
 
 def test():
-    filename = "data/C1HW04_IMG02_2019.bmp"
+    filename = "data/HW05-3-02.bmp"
     img = hw2.readRGB(filename)
     moduleAdd(modules[1][0], modules[1][1:])
     now_modules[0].img = img
     now_modules[0].update()
-    moduleAdd(modules[9][0], modules[9][1:])
-    moduleAdd(modules[-4][0], modules[-4][1:])
-    moduleAdd(modules[-6][0], modules[-6][1:])
-    moduleAdd(modules[-3][0], modules[-3][1:])
+    moduleAdd(modules[10][0], modules[10][1:])
+    moduleAdd(modules[3][0], modules[3][1:])
+    moduleAdd(modules[-1][0], modules[-1][1:])
+    moduleAdd(modules[-2][0], modules[-2][1:])
 
 
 # Predefine modules
@@ -443,16 +502,18 @@ modules = [
     (ImageReading, hw1.read64,           "64 formatted image (*.64)"),
     (ImageReading, hw2.readRGB,          "JPG or BMP image"
                                          "(*.JPG *.JPEG *.jpg *.jpeg *.bmp)"),
-    # histogram module
+    # Custom module
     (ImageHistogram, hw1.getHist),
+    (ImageColorbar,  hw5.colorMapHSI),
     # util module
     (ImageSimple,  utils.copyImg),
+
     # hw1 module
     (ImageSpinbox, hw1.imageAdd,         [(float, (-255, 255), 0)]),
     (ImageSpinbox, hw1.imageMult,        [(float, (0, 255), 1)]),
     (ImageSimple,  hw1.imageDiff, 2),
     (ImageSimple,  hw1.imageAvg, 2),
-    (ImageSimple,  hw1.image_special_func),
+    # (ImageSimple,  hw1.image_special_func),
     # hw2 module
     (ImageSimple,  hw2.toGrayA),
     (ImageSimple,  hw2.toGrayB),
@@ -462,29 +523,29 @@ modules = [
     (ImageText,    hw2.bilinear,         "600x400", ""),
     # hw3 module
     (ImageText,    hw3.medianFilter,     "3x3", ""),
-    (ImageText,    hw3.minFilter,        "3x3", ""),
-    (ImageText,    hw3.maxFilter,        "3x3", ""),
+    # (ImageText,    hw3.minFilter,        "3x3", ""),
+    # (ImageText,    hw3.maxFilter,        "3x3", ""),
     (ImageText,    hw3.boxFilter,        "3x3", ""),
-    (ImageSpinbox, hw3.idealLowpass,     [(float, (0, 1000), 20, "cutoff")]),
+    # (ImageSpinbox, hw3.idealLowpass,     [(float, (0, 1000), 20, "cutoff")]),
     (ImageSpinbox, hw3.gaussian,         [(float, (0, 1000), 20, "cutoff")]),
-    (ImageSpinbox, hw3.butterworth,      [(float, (0, 1000), 20, "cutoff"),
-                                          (float, (0, 1000), 1, "n")]),
-    (ImageSpinbox, hw3.unsharp,          [(float, (0, 1000), 2, "k"),
-                                          (float, (0, 1000), 20, "cutoff")]),
+    # (ImageSpinbox, hw3.butterworth,      [(float, (0, 1000), 20, "cutoff"),
+    #                                       (float, (0, 1000), 1, "n")]),
+    # (ImageSpinbox, hw3.unsharp,          [(float, (0, 1000), 2, "k"),
+    #                                       (float, (0, 1000), 20, "cutoff")]),
     (ImageSpinbox, hw3.gaussianHigh,     [(float, (0, 1000), 2, "k"),
                                           (float, (0, 1000), 20, "cutoff")]),
-    (ImageSpinbox, hw3.idealHighpass,    [(float, (0, 1000), 2, "k"),
-                                          (float, (0, 1000), 20, "cutoff")]),
-    (ImageSpinbox, hw3.butterworthHigh,  [(float, (0, 1000), 2, "k"),
-                                          (float, (0, 1000), 20, "cutoff"),
-                                          (float, (0, 1000), 1, "n")]),
-    (ImageSpinbox, hw3.sobelH,           [(float, (0, 1000), 2)]),
-    (ImageSpinbox, hw3.sobelV,           [(float, (0, 1000), 2)]),
+    # (ImageSpinbox, hw3.idealHighpass,    [(float, (0, 1000), 2, "k"),
+    #                                       (float, (0, 1000), 20, "cutoff")]),
+    # (ImageSpinbox, hw3.butterworthHigh,  [(float, (0, 1000), 2, "k"),
+    #                                       (float, (0, 1000), 20, "cutoff"),
+    #                                       (float, (0, 1000), 1, "n")]),
+    # (ImageSpinbox, hw3.sobelH,           [(float, (0, 1000), 2)]),
+    # (ImageSpinbox, hw3.sobelV,           [(float, (0, 1000), 2)]),
     # (ImageSpinbox, hw3.roberGx,          [(float, (0, 1000), 2)]),
     # (ImageSpinbox, hw3.roberGy,          [(float, (0, 1000), 2)]),
     (ImageSpinbox, hw3.laplacian4,       [(float, (0, 1000), 2)]),
     (ImageSpinbox, hw3.laplacian8,       [(float, (0, 1000), 2)]),
-    (ImageText,    hw3.customKernal,     "0 0 0; 0 1 0; 0 0 0"),
+    # (ImageText,    hw3.customKernal,     "0 0 0; 0 1 0; 0 0 0"),
     (ImageSpinbox, hw3.LoG,              [(float, (0, 1000), 2, "k"),
                                           (float, (0, 1000), 1, "sigma")]),
     # hw4 module
@@ -494,7 +555,7 @@ modules = [
     (ImageSpinbox, hw4.noiseGaussian,    [(int, (-255, 255), 0, "mean"),
                                           (int, (0, 255), 1, "std")]),
     (ImageSpinbox, hw4.noiseUniform,     [(int, (0, 255), 50, "width")]),
-    (ImageSpinbox, hw4.turbulenceBlur,   [(float, (0, 1000), 1, "k")]),
+    # (ImageSpinbox, hw4.turbulenceBlur,   [(float, (0, 1000), 1, "k")]),
     (ImageSpinbox, hw4.motionBlur,       [(float, (-10, 10), 0.01, "dx"),
                                           (float, (-10, 10), 0.01, "dy")]),
     (ImageSpinbox, hw4.motionInv,        [(float, (-10, 10), 0.01, "dx"),
@@ -503,6 +564,11 @@ modules = [
                                           (float, (-10, 10), 0.01, "dx"),
                                           (float, (-10, 10), 0.01, "dy")]),
     (ImageSimple,  hw4.getShowSpectrum),
+    # hw5 module
+    (ImageSpinbox, hw5.kMean,            [(int, (2, 20), 2, "Number")]),
+    (ImageMenu,    hw5.colorTransform,   [(hw5.Color, "From"),
+                                          (hw5.Color, "To")]),
+    (ImageSimple,  hw5.getPseudo, 2),
 ]
 
 # setup and run

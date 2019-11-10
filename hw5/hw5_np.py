@@ -234,27 +234,33 @@ def readHex(s):
 
 def colorMapHSI(color_start, color_end, n=256):
     """
-    HSI Colormap creation by provied by two colors
+    Create colormap by two colors
     """
+    if type(color_start) is str:
+        color_start = readHex(color_start)
+    if type(color_end) is str:
+        color_end = readHex(color_end)
     s, e = fromRGB(np.array([[color_start, color_end]]),
                    Color.HSI)[0]
     cmap = colorMap(s, e, n)
     return hw1.limitImg01(toRGB(cmap[None], Color.HSI)[0])
 
 
-def cmPlot(img, cmap):
-    """ Plot the image and it's color bar by pyplot """
-    plt.figure()
-    im = plt.imshow(img, cmap=ListedColormap(cmap))
-    plt.colorbar(im)
-
-
-def showPseudo(img, color_start, color_end, n=256):
+def showPseudo(img, *args, **kwargs):
     """ Plot pseduo color image by pyplot with hex color input"""
-    cmap = colorMapHSI(readHex(color_start), readHex(color_end), n)
+    cmap = colorMapHSI(*args, **kwargs)
     plt.figure()
     im = plt.imshow(img, cmap=ListedColormap(cmap))
     plt.colorbar(im)
+
+
+def getPseudo(img, cmap):
+    """ Using pseudo color on grayscale image """
+    # This condition is for QT
+    if len(cmap.shape) == 3:
+        cmap = cmap[:, 0, :]
+    ind = np.array(img * (cmap.shape[0] - 1) / np.max(img), dtype=np.int)
+    return cmap[ind]
 
 
 def createHSI(i=0.5, sizeh=256, sizes=256):

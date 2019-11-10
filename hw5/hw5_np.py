@@ -12,6 +12,7 @@ import argparse
 import hw1_np as hw1
 import hw2_np as hw2
 import hw3_np as hw3
+import hw4_np as hw4
 import utils_cpp
 import utils
 from utils import OrderAction
@@ -223,16 +224,37 @@ def colorMap(color_start, color_end, n=256):
     return cmap
 
 
-def colorMapHSI(*args, **kwargs):
-    cmap = colorMap(*args, **kwargs)
+def readHex(s):
+    """
+    Transfer hex (010203) to RGB(1, 2, 3)
+    """
+    v = int(s, 16)
+    return np.array([v // 256 // 256, v // 256 % 256, v % 256]) / 255
+
+
+def colorMapHSI(color_start, color_end, n=256):
+    """
+    HSI Colormap creation by provied by two colors
+    """
+    s, e = fromRGB(np.array([[color_start, color_end]]),
+                   Color.HSI)[0]
+    cmap = colorMap(s, e, n)
     return hw1.limitImg01(toRGB(cmap[None], Color.HSI)[0])
 
 
 def cmPlot(img, cmap):
     """ Plot the image and it's color bar by pyplot """
+    plt.figure()
     im = plt.imshow(img, cmap=ListedColormap(cmap))
     plt.colorbar(im)
-    plt.show()
+
+
+def showPseudo(img, color_start, color_end, n=256):
+    """ Plot pseduo color image by pyplot with hex color input"""
+    cmap = colorMapHSI(readHex(color_start), readHex(color_end), n)
+    plt.figure()
+    im = plt.imshow(img, cmap=ListedColormap(cmap))
+    plt.colorbar(im)
 
 
 def createHSI(i=0.5, sizeh=256, sizes=256):
@@ -247,26 +269,42 @@ def createHSI(i=0.5, sizeh=256, sizes=256):
     return toRGB(hsi, Color.HSI)
 
 
-def kMean(img, k, max_epoch=1000, tor=1e-3):
+def kMean(img, k, max_epoch=1000, tor=1e-3, interger=False):
     """
     K-mean.
-    The data
+    The input should be 3 channels.
+    The output is the image
     """
     if img.shape[-1] != 3:
         raise ValueError("Data should be three channel")
     data = img.reshape(-1, 3)
     ans = np.zeros([k, 3])
     ans = data[np.random.choice(np.arange(data.shape[0]), k, replace=False), :]
+
+    # iterations
     for i in range(max_epoch):
         dist = np.sum((data - ans[:, None, :]) ** 2, axis=2)
         closest = np.argmin(dist, axis=0)
         now_ans = np.array([np.mean(data[closest == i], axis=0)
                             for i in range(k)])
+        # stop
         if np.sum(np.abs(ans - now_ans)) < tor:
-            return closest.reshape(img.shape[:2])
+            label = closest.reshape(img.shape[:2])
+            if interger:
+                return label
+            else:
+                return label / (k - 1)
         ans = now_ans
-
     raise ValueError("Unable to converge")
+
+
+def parserAdd_hw5(parser):
+    parser.add_argument("--colortransform",  type=Color, metavar=("form", "to"), nargs=2,
+                        func=colorTransform, action=OrderAction)
+    parser.add_argument("--showpseudo",      type=str,   metavar=("000000", "ffffff"), nargs=2,
+                        func=showPseudo,     action=OrderAction, layer=(1, None))
+    parser.add_argument("--kmeans",          type=int,   metavar=("k"),
+                        func=kMean,          action=OrderAction)
 
 
 def test():
@@ -287,11 +325,12 @@ def test():
 
 if __name__ == "__main__":
     # testTransform()
-    test()
-    parser = argparse.ArgumentParser(description="HW4")
+    # test()
+    parser = argparse.ArgumentParser(description="HW5")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)
     hw2.parserAdd_hw2(parser)
     hw3.parserAdd_hw3(parser)
-    parserAdd_hw4(parser)
+    hw4.parserAdd_hw4(parser)
+    parserAdd_hw5(parser)
     utils.orderRun(parser)

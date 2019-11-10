@@ -2,10 +2,12 @@
 Author: linnil1
 Objective: Image Processing HW5
 Description: Some operations are implemented in the file
-* Color Space transform: RGB, HSI, CMY, CMYK
+* Color Space transform: RGB, CMY, CMYK, HSI, XYZ, LAB, YUV
+* Pseudo Color
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import argparse
 import hw1_np as hw1
 import hw2_np as hw2
@@ -56,9 +58,6 @@ def fromRGB(img, space):
              np.sqrt((R - G) ** 2 + (R - B) * (G - B)) + 1e-6))
         h = th
         h[B > G] = 2 * np.pi - h[B > G]
-        assert((i >= 0).all())
-        assert(((1 >= s) & (s >= 0)).all())
-        assert(((2 * np.pi >= h) & (h >= 0)).all())
         return np.stack([h, s, i], axis=2)
 
     elif space == Color.XYZ:
@@ -116,9 +115,10 @@ def toRGB(img, space):
     elif space == Color.HSI:
         # textbook
         # to hsi
-        h, s, i = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+        h, s, i = img[:, :, 0].copy(), img[:, :, 1], img[:, :, 2]
         R = np.zeros(img.shape[:2])
         G, B = R.copy(), R.copy()
+        h = h - np.floor(h / 2 / np.pi) * 2 * np.pi
 
         # thress sectors
         RG = h < np.pi * 2 / 3
@@ -175,6 +175,7 @@ def toRGB(img, space):
 
 
 def colorTransform(img, space1, space2):
+    """ Transform color space from space1 to space2 """
     img_rgb = img
     if space1 != Color.RGB:
         img_rgb = toRGB(img, space1)
@@ -182,10 +183,14 @@ def colorTransform(img, space1, space2):
 
 
 def testTransform():
+    """
+    This plot all layers after color transform by each methods
+    """
     img = hw2.readRGB("../hw2/data/kemono_friends.jpg")
     for c in list(Color):
         if c == Color.RGB:
             continue
+        print(c.value)
         trans_img = fromRGB(img, c)
         n = 2 + trans_img.shape[2]
 
@@ -205,39 +210,84 @@ def testTransform():
         plt.imshow(back_img)
 
         # plt.show()
-        print(c.value)
         plt.savefig("data/img_" + c.value + ".png")
         plt.clf()
-        # break
     exit()
+
+
+def colorMap(color_start, color_end, n=256):
+    """ Generate color map by starting color and ending color """
+    cmap = np.zeros([n, 3])
+    for i in range(3):
+        cmap[:, i] = np.linspace(color_start[i], color_end[i], n)
+    return cmap
+
+
+def colorMapHSI(*args, **kwargs):
+    cmap = colorMap(*args, **kwargs)
+    return hw1.limitImg01(toRGB(cmap[None], Color.HSI)[0])
+
+
+def cmPlot(img, cmap):
+    """ Plot the image and it's color bar by pyplot """
+    im = plt.imshow(img, cmap=ListedColormap(cmap))
+    plt.colorbar(im)
+    plt.show()
+
+
+def createHSI(i=0.5, sizeh=256, sizes=256):
+    """ Create color map for choosing """
+    # H: 0 to 2\pi
+    # S: 0 to 1
+    # I: 0 to 1
+    hsi = np.zeros([sizes, sizeh, 3])
+    hsi[:, :, 0] = np.linspace(0, np.pi * 2, sizeh)
+    hsi[:, :, 1] = np.linspace(1, 0, sizes)[:, None]
+    hsi[:, :, 2] = i
+    return toRGB(hsi, Color.HSI)
+
+
+def kMean(img, k, max_epoch=1000, tor=1e-3):
+    """
+    K-mean.
+    The data
+    """
+    if img.shape[-1] != 3:
+        raise ValueError("Data should be three channel")
+    data = img.reshape(-1, 3)
+    ans = np.zeros([k, 3])
+    ans = data[np.random.choice(np.arange(data.shape[0]), k, replace=False), :]
+    for i in range(max_epoch):
+        dist = np.sum((data - ans[:, None, :]) ** 2, axis=2)
+        closest = np.argmin(dist, axis=0)
+        now_ans = np.array([np.mean(data[closest == i], axis=0)
+                            for i in range(k)])
+        if np.sum(np.abs(ans - now_ans)) < tor:
+            return closest.reshape(img.shape[:2])
+        ans = now_ans
+
+    raise ValueError("Unable to converge")
 
 
 def test():
     # read
     # real_image = hw2.readRGB("../hw3/data/Image 3-3.jpg")
-    img = hw2.readRGB("../hw2/data/kemono_friends.jpg")
-    new_img = colorTransform(img, Color.RGB, Color.YUV)
-    # new_img[:,:,2] -= .2
-    print(img[:5, :5])
-    print(new_img[:5, :5])
-    print(new_img.shape)
-    new_img = colorTransform(new_img, Color.YUV, Color.RGB)
-    new_img = hw1.limitImg01(new_img)
-    print(new_img[:5, :5])
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.title("Original")
-    plt.imshow(img)
-    plt.subplot(1, 2, 2)
-    plt.title("Subtract I with HSI")
-    plt.imshow(new_img)
+    # img = hw2.readRGB("../hw2/data/kemono_friends.jpg")
+    img = hw2.readRGB("data/HW05-3-03.bmp")
+    print(img.shape)
+    img = hw2.bilinear(img, (68, 102))
+    plt.imshow(kMean(img, 6))
     plt.show()
+
+    color_start = [np.pi * 1.8, 1, .5]
+    color_end = [np.pi * -.05, 1, 0.5]
+    n = 256
     exit()
 
 
 if __name__ == "__main__":
-    testTransform()
-    # test()
+    # testTransform()
+    test()
     parser = argparse.ArgumentParser(description="HW4")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)

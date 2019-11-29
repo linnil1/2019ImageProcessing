@@ -118,6 +118,9 @@ def parserAdd_general(parser):
     parser.add_argument("--showgray",   type=str, nargs=0,
                         func=showGray,  layer=(1, None), action=OrderAction,
                         help="Display the image in gray scale")
+    parser.add_argument("--show-noasp", type=str, nargs=0,
+                        func=showNoasp, layer=(1, None), action=OrderAction,
+                        help="Display the image without aspect ratio")
 
 
 def copyImg(img):
@@ -147,6 +150,12 @@ def showGray(img):
     """ Display: gray scale image """
     plt.figure()
     plt.imshow(img, cmap="gray")
+
+
+def showNoasp(img):
+    """ Display: show without aspect ratio """
+    plt.figure()
+    plt.imshow(img, cmap="gray", aspect="auto")
 
 
 def show(img):

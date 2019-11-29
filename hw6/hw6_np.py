@@ -6,7 +6,6 @@ Description: Some operations are implemented in the file
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 import argparse
 import hw1_np as hw1
 import hw2_np as hw2
@@ -114,6 +113,23 @@ def fusion(img1, img2, depth):
     return wavelet2DInv(new_img, depth)[:ori_size[0], :ori_size[1]]
 
 
+def houghTransform(img):
+    """ Hough transform: The input should be edge image """
+    max_dis = np.int(np.ceil(np.sqrt(np.sum(np.array(img.shape) ** 2)))) + 1
+
+    # calculate distance by theta
+    th = np.linspace(0, np.pi, 181)
+    x, y = np.where(img)
+    r = (np.outer(x, np.cos(th)) + np.outer(y, np.sin(th))).astype(np.int)
+
+    # write on hough map
+    hough = np.zeros([2 * max_dis, th.size])
+    for i in range(len(x)):
+        hough[r[i] + max_dis, np.arange(th.size)] += 1
+
+    return hough / hough.max()
+
+
 def parserAdd_hw6(parser):
     parser.add_argument("--wavelet",         type=int, metavar=("depth"),
                         func=wavelet2D,      action=OrderAction)
@@ -121,6 +137,8 @@ def parserAdd_hw6(parser):
                         func=wavelet2DInv,   action=OrderAction)
     parser.add_argument("--fusion",          type=int, metavar=("depth"),
                         func=fusion,         action=OrderAction, layer=(2, 1))
+    parser.add_argument("--hough",           nargs=0,
+                        func=houghTransform, action=OrderAction)
 
 
 def test():
@@ -131,7 +149,7 @@ def test():
     # imgs = ["data/part2/set1/clock1.JPG", "data/part2/set1/clock2.JPG"]
     # imgs = ["data/part2/set2/multifocus1.JPG", "data/part2/set2/multifocus2.JPG", "data/part2/set2/multifocus3.JPG"]
     imgs = ["data/part2/set3/MRI1.jpg", "data/part2/set3/MRI2.jpg"]
-    imgs = [plt.imread(name)[:,:] / 255 for name in imgs]
+    imgs = [plt.imread(name)[:, :] / 255 for name in imgs]
 
     for i in range(3):
         if i < len(imgs):
@@ -150,7 +168,7 @@ def test():
 
 if __name__ == "__main__":
     # testTransform()
-    test()
+    # test()
     parser = argparse.ArgumentParser(description="HW6")
     utils.parserAdd_general(parser)
     hw1.parserAdd_hw1(parser)
@@ -158,4 +176,5 @@ if __name__ == "__main__":
     hw3.parserAdd_hw3(parser)
     hw4.parserAdd_hw4(parser)
     hw5.parserAdd_hw5(parser)
+    parserAdd_hw6(parser)
     utils.orderRun(parser)

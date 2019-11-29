@@ -189,7 +189,6 @@ def feqOperation(img, func):
     return feqOperationXY(img, distfilter)
 
 
-@hw1.limitImg
 def gaussian(img, sig):
     """ Low Pass: Gaussian """
     def gaussianFilter(dist):
@@ -237,17 +236,21 @@ def butterworthHigh(img, cutoff, n):
     return feqOperation(img, butterworthFilter)
 
 
-@wrapHighboostFilter
-def LoG(img, sig):
-    """ Laplacian of Gaussian with Highboost(k) """
+def LoGConv(img, sig):
+    """ Laplacian of Gaussian """
     n = int(sig * 6)
     n += (n % 2 == 0)
     j, i = np.meshgrid(np.arange(n) - n // 2,
                        np.arange(n) - n // 2)
     krn = (i ** 2 + j ** 2 - 2 * sig ** 2) / (sig ** 4) * \
         np.exp(-(i ** 2 + j ** 2) / (2 * sig ** 2))
-    # krn -= krn.sum()
     return spatialConv(img, krn)
+
+
+@wrapHighboostFilter
+def LoG(img, sig):
+    """ Laplacian of Gaussian with Highboost(k) """
+    return LoGConv(img, sig)
 
 
 def test():
@@ -303,8 +306,10 @@ def parserAdd_hw3(parser):
                         func=laplacian8,     action=OrderAction)
     parser.add_argument("--kernel",          type=str,   metavar=("arr"),
                         func=customKernal,   action=OrderAction)
-    parser.add_argument("--log",             type=float, metavar=("k", "sigma"), nargs=2,
+    parser.add_argument("--log-boost",       type=float, metavar=("k", "sigma"), nargs=2,
                         func=LoG,            action=OrderAction)
+    parser.add_argument("--log",             type=float, metavar=("sigma"),
+                        func=LoGConv,        action=OrderAction)
 
 
 if __name__ == "__main__":

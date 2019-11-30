@@ -136,7 +136,8 @@ def geoTransform(img, want_mask):
     # Make mask same x shape with image
     want_mask = np.int_(want_mask)
     x, y = np.where(want_mask)
-    affine = scaleX(img.shape[0] / (x.max() - x.min() + 1)) * transX(-x.min())
+    affine = scaleX(img.shape[0] / (x.max() - x.min() + 1)) * transX(-x.min()) * \
+             scaleY(img.shape[1] / (y.max() - y.min() + 1)) * transY(-y.min())
     want_fullx = transform(want_mask, affine, new_shape=img.shape[:2])
 
     # Resize the image by row
@@ -154,8 +155,9 @@ def geoTransform(img, want_mask):
                                       padrow[int_y], padrow[int_y + 1])
 
     # Inverse affine transform to original shape of mask
-    want_img = transform(want_fullx_img, np.linalg.inv(affine))
-    want_img = want_img[:want_mask.shape[0], :want_mask.shape[1]]
+    print(img.shape)
+    print(want_fullx_img.shape)
+    want_img = transform(want_fullx_img, affine ** -1, [*want_mask.shape, *img.shape[2:]])
     return want_img
 
 
@@ -180,11 +182,11 @@ def test():
     # imgs = ["data/part2/set3/MRI1.jpg", "data/part2/set3/MRI2.jpg"]
     # imgs = [plt.imread(name)[:, :] / 255 for name in imgs]
     img = hw2.readRGB("data/part1/IP_dog.bmp")
-    img = img[:, :, 0]
-    want_mask = np.zeros([1000, 1000])
+    # img = img[:, :, 0]
+    want_mask = np.zeros([2000, 2000])
     y, x = np.meshgrid(np.arange(want_mask.shape[0]),
                        np.arange(want_mask.shape[1]))
-    want_mask[(x - 500) ** 2 * 3 + (y - 500) ** 2 < 450 ** 2] = 1
+    want_mask[(x - 1000) ** 2 * 3 + (y - 1000) ** 2 < 550 ** 2] = 1
     want_img = geoTransform(img, want_mask)
     plt.imshow(want_img)
 

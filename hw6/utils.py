@@ -132,6 +132,13 @@ def pop(img):
     return None
 
 
+def readGray(filename):
+    """ Read color image to gray """
+    import hw2_np as hw2
+    img = hw2.readRGB(filename)
+    return hw2.toGrayA(img)
+
+
 def showHist(bar):
     """ Display histogram """
     plt.figure()

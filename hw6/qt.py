@@ -9,6 +9,7 @@ import hw2_np as hw2
 import hw3_np as hw3
 import hw4_np as hw4
 import hw5_np as hw5
+import hw6_np as hw6
 import utils
 
 
@@ -485,15 +486,28 @@ def alert(error):
 
 
 def test():
-    filename = "data/HW05-3-02.bmp"
-    img = hw2.readRGB(filename)
-    moduleAdd(modules[1][0], modules[1][1:])
+    imgs = ["data/part2/set1/clock1.JPG", "data/part2/set1/clock2.JPG"]
+    img = utils.readGray(imgs[0])
+    moduleAdd(modules[2][0], modules[2][1:])
     now_modules[0].img = img
     now_modules[0].update()
-    moduleAdd(modules[10][0], modules[10][1:])
-    moduleAdd(modules[3][0], modules[3][1:])
-    moduleAdd(modules[-1][0], modules[-1][1:])
+
+    img = utils.readGray(imgs[1])
+    moduleAdd(modules[2][0], modules[2][1:])
+    now_modules[1].img = img
+    now_modules[1].update()
+
     moduleAdd(modules[-2][0], modules[-2][1:])
+
+    moduleAdd(modules[-5][0], modules[-5][1:])
+    moduleAdd(modules[-4][0], modules[-4][1:])
+
+    img = utils.readGray("data/mask.jpg")
+    moduleAdd(modules[2][0], modules[2][1:])
+    now_modules[5].img = img
+    now_modules[5].update()
+
+    moduleAdd(modules[-1][0], modules[-1][1:])
 
 
 # Predefine modules
@@ -501,6 +515,8 @@ modules = [
     # read image module
     (ImageReading, hw1.read64,           "64 formatted image (*.64)"),
     (ImageReading, hw2.readRGB,          "JPG or BMP image"
+                                         "(*.JPG *.JPEG *.jpg *.jpeg *.bmp)"),
+    (ImageReading, utils.readGray,       "JPG or BMP image"
                                          "(*.JPG *.JPEG *.jpg *.jpeg *.bmp)"),
     # Custom module
     (ImageHistogram, hw1.getHist),
@@ -569,6 +585,12 @@ modules = [
     (ImageMenu,    hw5.colorTransform,   [(hw5.Color, "From"),
                                           (hw5.Color, "To")]),
     (ImageSimple,  hw5.getPseudo, 2),
+    # hw6 module
+    (ImageSpinbox, hw6.wavelet2D,        [(int, (0, 10), 1, "depth")]),
+    (ImageSpinbox, hw6.wavelet2DInv,     [(int, (0, 10), 1, "depth")]),
+    (ImageSimple,  hw6.houghTransform),
+    (ImageSpinbox, hw6.fusion,           [(int, (0, 10), 1, "depth")], 2),
+    (ImageSimple,  hw6.geoTransform, 2),
 ]
 
 # setup and run

@@ -190,3 +190,81 @@ def normalizeWrap(func):
     def wrapFunc(*args, **kwargs):
         return normalize(func(*args, **kwargs))
     return wrapFunc
+
+
+# Affine transform
+def linear(q, v1, v2):
+    """ Linear interpolation """
+    if q.shape == v1.shape:
+        return v1 + (q - q.astype(np.int)) * (v2 - v1)
+    else:
+        return v1 + (q - q.astype(np.int))[..., None] * (v2 - v1)
+
+
+def transform(img, affine, new_shape=None):
+    """ Affine Transform with bilinear """
+    # get locations of all points in new image
+    if not new_shape:
+        new_shape = img.shape
+    new_img = np.zeros(new_shape)
+    y, x = np.meshgrid(np.arange(new_img.shape[1]),
+                       np.arange(new_img.shape[0]))
+    z = np.ones(new_img.shape[:2])
+    xyz = np.stack([x, y, z], 2)
+
+    # get new locations
+    affine = np.array(affine ** -1)
+    pos = xyz.dot(affine.T)
+
+    # get nonzero
+    avail = (0 <= pos[:, :, 0]) & (pos[:, :, 0] < img.shape[0]) & \
+            (0 <= pos[:, :, 1]) & (pos[:, :, 1] < img.shape[1])
+    pos_avail = pos[avail]
+
+    # add padding that ensure not larger than border
+    if len(img.shape) == 2:
+        data = np.pad(img, ((1, 2), (1, 2)), 'constant')
+    else:
+        data = np.pad(img, ((1, 2), (1, 2), (0, 0)), 'constant')
+    int_x = np.array(pos_avail[:, 0], dtype=np.int32) + 1
+    int_y = np.array(pos_avail[:, 1], dtype=np.int32) + 1
+
+    # bilinear
+    new_img[avail] = linear(pos_avail[:, 0],
+                            linear(pos_avail[:, 1],
+                                   data[int_x,     int_y],
+                                   data[int_x,     int_y + 1]),
+                            linear(pos_avail[:, 1],
+                                   data[int_x + 1, int_y],
+                                   data[int_x + 1, int_y + 1]))
+    return new_img
+
+
+def rotate(th):
+    th *= np.pi / 180
+    m = np.matrix(np.zeros([3, 3]))
+    m[2, 2] = 1
+    m[0, 0] = m[1, 1] = np.cos(th)
+    m[0, 1] = -np.sin(th)
+    m[1, 0] = np.sin(th)
+    return m
+
+
+def setMetrix(*loc):
+    m = np.matrix(np.zeros([3, 3]))
+    m[0, 0] = m[1, 1] = m[2, 2] = 1
+
+    def wrap(r=1):
+        m[loc] = r
+        return m
+    return wrap
+
+
+# basic
+Base   = setMetrix(2, 2)
+transX = setMetrix(0, 2)
+transY = setMetrix(1, 2)
+shearX = setMetrix(0, 1)
+shearY = setMetrix(1, 0)
+scaleX = setMetrix(0, 0)
+scaleY = setMetrix(1, 1)

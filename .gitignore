@@ -5,3 +5,4 @@ dist
 *.zip
 __pycache__
 Homework*
+final/*/*.jpg

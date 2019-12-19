@@ -23,7 +23,7 @@ def shuffle_data(da, db):
     return shuffled_da, shuffled_db
 
 
-def read_images(filenames, domain=None, image_size=64):
+def read_images(filenames, domain=None, image_size=64, aspect=True, invert=True):
     images = []
     for fn in filenames:
         image = Image.open(fn)
@@ -31,12 +31,14 @@ def read_images(filenames, domain=None, image_size=64):
             continue
 
         h = image_size
-        w = int(h * image.size[0] / image.size[1])
-
-        image = image.resize((w, h), resample=Image.BILINEAR)
-        # image = image.resize((h, h), resample=Image.BILINEAR)
+        if aspect:
+            w = int(h * image.size[0] / image.size[1])
+            image = image.resize((w, h), resample=Image.BILINEAR)
+        else:
+            image = image.resize((h, h), resample=Image.BILINEAR)
         if len(image.getbands()) != 3:
-            image = ImageOps.invert(image)
+            if invert:
+                image = ImageOps.invert(image)
             image = image.convert("RGB")
         image = np.asarray(image).astype(np.float32) / 255.
         image = image.transpose(2,0,1)

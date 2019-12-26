@@ -35,6 +35,26 @@ for f in sorted(files):
     offset = ((img_pad.size[0] - img_res.size[0]) // 2, 50)
     img_pad.paste(img_res, offset)
 
+    """
+    plt.subplot(231)
+    plt.title("Original Imageh")
+    plt.imshow(Image.open(dir_name + f))
+    plt.subplot(232)
+    plt.title("gray scale and invert")
+    plt.imshow(img_inv, cmap="gray")
+    plt.subplot(233)
+    plt.title("Remove backgroud by substract blur image")
+    plt.imshow(img_fore, cmap="gray")
+    plt.subplot(234)
+    plt.title("Equalization")
+    plt.imshow(img_eq, cmap="gray")
+    plt.subplot(235)
+    plt.title("Blur")
+    plt.imshow(img_eqblur, cmap="gray")
+    plt.subplot(236)
+    plt.title("Invert back and and padding")
+    plt.imshow(img_pad, cmap="gray")
+    plt.show()
+    break
+    """
     img_pad.save(dir_save + f)
-    # plt.imshow(img_pad, cmap="gray")
-    # plt.show()

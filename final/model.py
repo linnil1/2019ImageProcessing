@@ -20,7 +20,14 @@ class Discriminator(nn.Module):
             nn.Conv2d(64 * 4, 64 * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(64 * 8),
             nn.LeakyReLU(0.2, inplace=True),
+
             nn.Conv2d(64 * 8, 1, 4, 1, 0, bias=False),
+            # one more layer
+            # nn.Conv2d(64 * 8, 64 * 16, 4, 1, 0, bias=False),
+            # nn.BatchNorm2d(64 * 16),
+            # nn.LeakyReLU(0.2, inplace=True),
+            # nn.Conv2d(64 * 16, 1, 4, 1, 0, bias=False),
+
             nn.Sigmoid()
         )
 
@@ -43,6 +50,14 @@ class Generator(nn.Module):
             nn.Conv2d(64 * 4, 64 * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(64 * 8),
             nn.LeakyReLU(0.2, inplace=True),
+
+            # one more layer
+            # nn.Conv2d(64 * 8, 64 * 16, 4, 2, 1, bias=False),
+            # nn.BatchNorm2d(64 * 16),
+            # nn.LeakyReLU(0.2, inplace=True),
+            # nn.ConvTranspose2d(64 * 16, 64 * 8, 4, 2, 1, bias=False),
+            # nn.BatchNorm2d(64 * 8),
+            # nn.ReLU(True),
 
             nn.ConvTranspose2d(64 * 8, 64 * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(64 * 4),

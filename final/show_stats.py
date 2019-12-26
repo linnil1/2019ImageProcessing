@@ -7,14 +7,14 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
 parser.add_argument('--task_name', type=str, default='draw', help='Set data name')
-parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
+parser.add_argument('--result_path', type=str, default='./results/', help='Set the path for trained models')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--from_index', type=int, default=0, help='From which data')
 args = parser.parse_args()
 
-model_path = os.path.join( args.model_path, args.task_name )
-model_path = os.path.join( model_path, args.model_arch )
-stats_path = os.path.join( model_path, "stats.json" )
+result_path = os.path.join( args.result_path, args.task_name )
+result_path = os.path.join( result_path, args.model_arch )
+stats_path  = os.path.join( result_path, "stats.json" )
 
 stats = json.load(open(stats_path))["data"]
 
@@ -33,6 +33,7 @@ plt.figure(figsize=(8, 10))
 plt.subplot(311)
 plt.plot(iters, gan_loss_A[f:], label="ganA")
 plt.plot(iters, gan_loss_B[f:], label="ganB")
+plt.ylim(top=2)
 plt.legend()
 plt.subplot(312)
 plt.plot(iters, recon_loss_A[f:], label="reconA")
@@ -41,5 +42,6 @@ plt.legend()
 plt.subplot(313)
 plt.plot(iters, dis_loss_A[f:], label="disA")
 plt.plot(iters, dis_loss_B[f:], label="disB")
+plt.ylim(top=2)
 plt.legend()
 plt.show()

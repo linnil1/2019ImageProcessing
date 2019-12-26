@@ -17,12 +17,12 @@ import pytorch_ssim
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
 parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
 parser.add_argument('--task_name', type=str, default='draw', help='Set data name')
-parser.add_argument('--epoch_size', type=int, default=5000, help='Set epoch size')
+parser.add_argument('--epoch_size', type=int, default=10000, help='Set epoch size')
+parser.add_argument('--iter_size', type=int, default=40000, help='Set epoch size')
 parser.add_argument('--batch_size', type=int, default=32, help='Set batch size')
 parser.add_argument('--no_invert', action='store_false', default=True, help='Invert white and black')
 parser.add_argument('--no_aspect', action='store_false', default=True, help='Maintaain aspect ratio')
 parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
-parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--image_size', type=int, default=256, help='Image size. 64 for every experiment in the paper')
 
@@ -30,13 +30,14 @@ parser.add_argument('--learning_rate', type=float, default=0.001, help='Set lear
 parser.add_argument('--gan_curriculum', type=int, default=10000, help='Strong GAN loss for certain period at the beginning')
 parser.add_argument('--starting_rate', type=float, default=0.01, help='Set the lambda weight between GAN loss and Recon loss during curriculum period at the beginning. We used the 0.01 weight.')
 parser.add_argument('--default_rate', type=float, default=0.5, help='Set the lambda weight between GAN loss and Recon loss after curriculum period. We used the 0.5 weight.')
+parser.add_argument('--ssim_window', type=int, default=11, help='Window size for ssim')
 
 parser.add_argument('--n_test', type=int, default=50, help='Number of test data.')
 
 parser.add_argument('--update_interval', type=int, default=5, help='')
 parser.add_argument('--log_interval', type=int, default=50, help='Print loss values every log_interval iterations.')
 parser.add_argument('--image_save_interval', type=int, default=1000, help='Save test results every image_save_interval iterations.')
-parser.add_argument('--model_save_interval', type=int, default=10000, help='Save models every model_save_interval iterations.')
+parser.add_argument('--model_save_interval', type=int, default=1000, help='Save models every model_save_interval iterations.')
 
 
 def as_np(data):
@@ -64,7 +65,7 @@ def get_gan_loss(dis_real, dis_fake, criterion, cuda):
         labels_dis_fake = labels_dis_fake.cuda()
         labels_gen = labels_gen.cuda()
 
-    dis_loss = criterion( dis_real, labels_dis_real ) * 0.5 + criterion( dis_fake, labels_dis_fake ) * 0.5
+    dis_loss = criterion( dis_real, labels_dis_real ) * 0.2 + criterion( dis_fake, labels_dis_fake ) * 0.8
     gen_loss = criterion( dis_fake, labels_gen )
 
     return dis_loss, gen_loss
@@ -82,19 +83,18 @@ def main():
 
     task_name = args.task_name
 
+    iter_size  = args.iter_size
     epoch_size = args.epoch_size
     batch_size = args.batch_size
+
+    np.random.seed(2019)
 
     # path
     result_path = os.path.join( args.result_path, args.task_name )
     result_path = os.path.join( result_path, args.model_arch )
-    model_path = os.path.join( args.model_path, args.task_name )
-    model_path = os.path.join( model_path, args.model_arch )
-    stats_path = os.path.join( model_path, "stats.json" )
+    stats_path = os.path.join( result_path, "stats.json" )
     if not os.path.exists(result_path):
         os.makedirs(result_path)
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
     json.dump({"data": []}, open(stats_path, "w"))
     stats = json.load(open(stats_path))["data"]
 
@@ -102,14 +102,11 @@ def main():
     data_style_A, data_style_B, test_style_A, test_style_B = get_data()
     test_A = read_images( test_style_A, None, args.image_size, aspect=args.no_aspect, invert=args.no_invert )
     test_B = read_images( test_style_B, None, args.image_size, aspect=args.no_aspect, invert=args.no_invert )
-    test_A = Variable( torch.FloatTensor( test_A ), requires_grad=False)
-    test_B = Variable( torch.FloatTensor( test_B ), requires_grad=False)
+    test_A, test_B = imageTensor(test_A, test_B)
 
-    # tmp: save training data
-    train_A = read_images( data_style_A, None, args.image_size, aspect=args.no_aspect, invert=args.no_invert )
-    train_B = read_images( data_style_B, None, args.image_size, aspect=args.no_aspect, invert=args.no_invert )
-    train_A = Variable( torch.FloatTensor( train_A ), requires_grad=False)
-    train_B = Variable( torch.FloatTensor( train_B ), requires_grad=False)
+    # tmp: save training image
+    data_style_A = read_images( data_style_A, None, args.image_size, aspect=args.no_aspect, invert=args.no_invert )
+    data_style_B = read_images( data_style_B, None, args.image_size, aspect=args.no_aspect, invert=args.no_invert )
 
     generator_A = Generator()
     generator_B = Generator()
@@ -126,9 +123,10 @@ def main():
 
     data_size = min( len(data_style_A), len(data_style_B) )
     n_batches = ( data_size // batch_size )
+    print("batches per epoch", n_batches)
 
     recon_criterion = nn.MSELoss()
-    recon_criterion_ssim = pytorch_ssim.SSIM(window_size=11)
+    recon_criterion_ssim = pytorch_ssim.SSIM(window_size=args.ssim_window)
     gan_criterion = nn.BCELoss()
 
     gen_params = chain(generator_A.parameters(), generator_B.parameters())
@@ -143,12 +141,12 @@ def main():
     dis_loss_total = []
 
     for epoch in range(epoch_size):
+        if iters > iter_size:
+            break
         # data_style_A, data_style_B = shuffle_data( data_style_A, data_style_B)
         # shuffle
-        a_idx = list(range(len(train_A)))
-        np.random.shuffle(a_idx)
-        b_idx = list(range(len(train_B)))
-        np.random.shuffle(b_idx)
+        train_A, train_B = shuffle_data(data_style_A, data_style_B)
+        train_A, train_B = imageTensor( train_A, train_B )
 
         widgets = ['epoch #%d|' % epoch, Percentage(), Bar(), ETA()]
         pbar = ProgressBar(maxval=n_batches, widgets=widgets)
@@ -169,9 +167,8 @@ def main():
             # B = read_images( B_path, None, args.image_size )
             # A = Variable( torch.FloatTensor( A ) )
             # B = Variable( torch.FloatTensor( B ) )
-
-            A = train_A[a_idx[ i * batch_size: (i+1) * batch_size ]]
-            B = train_B[b_idx[ i * batch_size: (i+1) * batch_size ]]
+            A = train_A[i * batch_size: (i+1) * batch_size ]
+            B = train_B[i * batch_size: (i+1) * batch_size ]
 
             if cuda:
                 A = A.cuda()
@@ -198,6 +195,11 @@ def main():
             B_dis_fake = discriminator_B( AB )
 
             dis_loss_B, gen_loss_B = get_gan_loss( B_dis_real, B_dis_fake, gan_criterion, cuda )
+
+            # dis_loss_A *= 2
+            # gen_loss_A *= 2
+            # dis_loss_B *= 2
+            # gen_loss_B *= 2
 
             # Total Loss
 
@@ -252,7 +254,7 @@ def main():
 
                     n_testset = min( test_A.size()[0], test_B.size()[0] )
 
-                    subdir_path = os.path.join( result_path, str(iters / args.image_save_interval) )
+                    subdir_path = os.path.join( result_path, str(iters // args.image_save_interval) )
 
                     if os.path.exists( subdir_path ):
                         pass
@@ -276,12 +278,13 @@ def main():
                         Image.fromarray(BAB_val.astype(np.uint8)[:,:,::-1]).save( filename_prefix + '.BAB.jpg')
 
                 if iters % args.model_save_interval == 0:
-                    torch.save( generator_A,     os.path.join(model_path, 'model_gen_A-' + str( iters / args.model_save_interval )))
-                    torch.save( generator_B,     os.path.join(model_path, 'model_gen_B-' + str( iters / args.model_save_interval )))
-                    torch.save( discriminator_A, os.path.join(model_path, 'model_dis_A-' + str( iters / args.model_save_interval )))
-                    torch.save( discriminator_B, os.path.join(model_path, 'model_dis_B-' + str( iters / args.model_save_interval )))
+                    torch.save( generator_A,     os.path.join(result_path, 'model_gen_A-' + str( iters // args.model_save_interval )))
+                    torch.save( generator_B,     os.path.join(result_path, 'model_gen_B-' + str( iters // args.model_save_interval )))
+                    torch.save( discriminator_A, os.path.join(result_path, 'model_dis_A-' + str( iters // args.model_save_interval )))
+                    torch.save( discriminator_B, os.path.join(result_path, 'model_dis_B-' + str( iters // args.model_save_interval )))
 
             iters += 1
+
 
 if __name__=="__main__":
     main()

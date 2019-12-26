@@ -17,7 +17,7 @@ args = parser.parse_args()
 result_path = os.path.join(args.result_path, args.task_name )
 result_path = os.path.join(result_path, args.model_arch )
 
-epoches = os.listdir(result_path)
+epoches = [name for name in os.listdir(result_path) if os.path.isdir(os.path.join(result_path, name))]
 epoches = sorted(zip(map(float, epoches), epoches))
 last_epoch = list(epoches)[args.epoch][-1]
 last_epoch_path = os.path.join(result_path, last_epoch)

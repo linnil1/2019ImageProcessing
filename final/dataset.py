@@ -32,10 +32,12 @@ def shuffle_data(da, db):
     shuffled_db = db[b_idx]
 
     # randomm flip
+    """
     for i in range(0, la // 2):
         shuffled_da[i] = Image.fromarray(shuffled_da[i]).transpose(Image.FLIP_LEFT_RIGHT)
     for i in range(lb // 4, lb * 3 // 4):
         shuffled_db[i] = Image.fromarray(shuffled_db[i]).transpose(Image.FLIP_LEFT_RIGHT)
+    """
 
     return shuffled_da, shuffled_db
 
